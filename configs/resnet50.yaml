@@ -1,0 +1,55 @@
+arch: resnet50
+
+# Data
+data_root: data_raw/TN5000_forReview
+train_txt: data_raw/TN5000_forReview/ImageSets/Main/train.txt
+val_txt: data_raw/TN5000_forReview/ImageSets/Main/val.txt
+test_txt: data_raw/TN5000_forReview/ImageSets/Main/test.txt
+
+# Preprocessing
+img_size: 224
+imagenet_mean: [0.485, 0.456, 0.406]
+imagenet_std: [0.229, 0.224, 0.225]
+
+# Model head
+head_hidden: 256
+dropout: 0.3
+
+# Loss
+pos_weight: null           # computed from training data at runtime (~0.399)
+pos_weight_scale: 1.0      # Optuna-tunable multiplier
+label_smooth_eps: 0.05
+
+# Optimizer (AdamW)
+lr_head: 3.0e-4
+weight_decay: 1.0e-4
+grad_clip_norm: 1.0
+
+# Scheduler (CosineAnnealingWarmRestarts)
+T_0: 10
+T_mult: 2
+
+# Batch
+batch_size: 32             # ResNet/EffNet; Swin uses 16
+
+# Training
+max_epochs: 60
+patience: 10
+min_delta: 0.001
+random_seed: 42
+
+# Freeze schedule (epochs are 1-indexed)
+# epochs 1-3:  head only
+# epoch 4:     + layer4
+# epoch 8:     + layer3
+# epoch 12+:   full unfreeze
+
+# Staged unfreeze for EfficientNet-B3
+# epoch 4: unfreeze last 2 blocks
+# epoch 8: unfreeze next 2 blocks
+# epoch 12+: full unfreeze
+
+# Staged unfreeze for Swin-Tiny
+# epochs 1-5: head only
+# epoch 6+: + last stage
+# epoch 10+: full unfreeze
