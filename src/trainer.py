@@ -177,6 +177,25 @@ class EarlyStopping:
             model.load_state_dict(self.best_state)
 
 
+def build_optimizer_and_scheduler(
+    model, lr_head, lr_backbone, weight_decay, T_0, T_mult, last_epoch=-1
+):
+    if hasattr(model, "get_param_groups"):
+        param_groups = model.get_param_groups(lr_head, lr_backbone)
+    else:
+        param_groups = [{"params": [p for p in model.parameters() if p.requires_grad], "lr": lr_head}]
+    
+    # Crucial fix: when last_epoch > -1, PyTorch schedulers expect 'initial_lr' to be set
+    if last_epoch != -1:
+        for group in param_groups:
+            group.setdefault("initial_lr", group["lr"])
+
+    optimizer = AdamW(param_groups, weight_decay=weight_decay)
+    scheduler = CosineAnnealingWarmRestarts(
+        optimizer, T_0=T_0, T_mult=T_mult, last_epoch=last_epoch
+    )
+    return optimizer, scheduler
+
 def train_model(
     model: nn.Module,
     train_loader: DataLoader,
@@ -226,12 +245,9 @@ def train_model(
     # ── Build optimizer & scheduler ONCE before the loop ──────────────────────
     # Rebuilding AdamW every epoch discards all accumulated momentum/variance
     # and wastes CPU cycles. We only rebuild when staged unfreezing adds params.
-    if hasattr(model, "get_param_groups"):
-        param_groups = model.get_param_groups(lr_head, lr_backbone)
-    else:
-        param_groups = [{"params": model.parameters(), "lr": lr_head}]
-    optimizer = AdamW(param_groups, weight_decay=weight_decay)
-    scheduler = CosineAnnealingWarmRestarts(optimizer, T_0=T_0, T_mult=T_mult)
+    optimizer, scheduler = build_optimizer_and_scheduler(
+        model, lr_head, lr_backbone, weight_decay, T_0, T_mult, last_epoch=-1
+    )
     _prev_trainable = sum(1 for p in model.parameters() if p.requires_grad)
 
     for epoch in range(1, max_epochs + 1):
@@ -241,12 +257,9 @@ def train_model(
             _curr_trainable = sum(1 for p in model.parameters() if p.requires_grad)
             if _curr_trainable != _prev_trainable:
                 print(f"  [unfreeze] Trainable params {_prev_trainable}\u2192{_curr_trainable}. Rebuilding optimizer.")
-                if hasattr(model, "get_param_groups"):
-                    param_groups = model.get_param_groups(lr_head, lr_backbone)
-                else:
-                    param_groups = [{"params": [p for p in model.parameters() if p.requires_grad], "lr": lr_head}]
-                optimizer = AdamW(param_groups, weight_decay=weight_decay)
-                scheduler = CosineAnnealingWarmRestarts(optimizer, T_0=T_0, T_mult=T_mult, last_epoch=epoch - 1)
+                optimizer, scheduler = build_optimizer_and_scheduler(
+                    model, lr_head, lr_backbone, weight_decay, T_0, T_mult, last_epoch=epoch - 1
+                )
                 _prev_trainable = _curr_trainable
 
         t0 = time.time()
