@@ -272,11 +272,6 @@ def train_model(
             f"{elapsed/60:.1f}min{star}"
         )
 
-        # Brief inter-epoch pause on CPU — reduces sustained heat that causes
-        # thermal shutdown on laptops. Skipped on GPU (AMP handles it).
-        if not _USE_AMP:
-            time.sleep(2)
-
         should_stop = early_stopping(val_metrics["auc"], model)
 
         if checkpoint_dir and early_stopping.counter == 0:
