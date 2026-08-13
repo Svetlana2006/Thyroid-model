@@ -11,6 +11,8 @@ from pathlib import Path
 import numpy as np
 from PIL import Image
 import torch
+import cv2
+from matplotlib import colormaps
 
 sys.path.insert(0, str(Path(__file__).parent))
 
@@ -24,6 +26,43 @@ DEFAULT_CHECKPOINTS = [
     "outputs/checkpoints/swin_tiny_seed1_best.pt",
     "outputs/checkpoints/swin_tiny_seed2_best.pt",
 ]
+
+
+def ensemble_probability(models, image_batch):
+    """Return the mean malignancy probability from all models for each image."""
+    with torch.no_grad():
+        probabilities = [torch.sigmoid(model(image_batch).squeeze(1)) for model in models]
+    return torch.stack(probabilities).mean(dim=0)
+
+
+def occlusion_sensitivity(models, image_tensor, original_probability, patch_size=32, stride=24, batch_size=16):
+    """Signed probability change after masking each patch with the normalized image mean."""
+    _, _, height, width = image_tensor.shape
+    y_positions = list(range(0, height - patch_size + 1, stride))
+    x_positions = list(range(0, width - patch_size + 1, stride))
+    if y_positions[-1] != height - patch_size:
+        y_positions.append(height - patch_size)
+    if x_positions[-1] != width - patch_size:
+        x_positions.append(width - patch_size)
+
+    locations = [(y, x) for y in y_positions for x in x_positions]
+    heatmap = np.zeros((height, width), dtype=np.float32)
+    coverage = np.zeros((height, width), dtype=np.float32)
+
+    for start in range(0, len(locations), batch_size):
+        batch_locations = locations[start:start + batch_size]
+        masked = image_tensor.repeat(len(batch_locations), 1, 1, 1)
+        for index, (y, x) in enumerate(batch_locations):
+            masked[index, :, y:y + patch_size, x:x + patch_size] = 0.0
+
+        occluded_probabilities = ensemble_probability(models, masked).cpu().numpy()
+        # Positive = this patch supported the original malignancy probability.
+        probability_drops = original_probability - occluded_probabilities
+        for (y, x), drop in zip(batch_locations, probability_drops):
+            heatmap[y:y + patch_size, x:x + patch_size] += drop
+            coverage[y:y + patch_size, x:x + patch_size] += 1
+
+    return heatmap / np.maximum(coverage, 1.0)
 
 
 def main():
@@ -40,6 +79,16 @@ def main():
         type=float,
         default=0.5,
         help="Probability threshold for benign/malignant output (default: 0.5)",
+    )
+    parser.add_argument(
+        "--occlusion-heatmap", "--heatmap",
+        action="store_true",
+        help="Save a signed ensemble occlusion-sensitivity heatmap.",
+    )
+    parser.add_argument(
+        "--heatmap-output",
+        default=None,
+        help="Output PNG path for --occlusion-heatmap (default: outputs/heatmaps/<image>_occlusion.png)",
     )
     args = parser.parse_args()
 
@@ -60,6 +109,7 @@ def main():
 
     probabilities = []
     model_names = []
+    models = []
     for checkpoint_path in checkpoint_paths:
         checkpoint = torch.load(checkpoint_path, map_location=device, weights_only=False)
         config = checkpoint["config"]
@@ -71,6 +121,7 @@ def main():
             logit = model(image_tensor).item()
         probabilities.append(float(sigmoid(np.array([logit]))[0]))
         model_names.append(checkpoint_path.name)
+        models.append(model)
 
     probability = float(np.mean(probabilities))
     prediction = "Malignant" if probability >= args.threshold else "Benign"
@@ -79,6 +130,22 @@ def main():
     print(f"Models averaged ({len(model_names)}): {', '.join(model_names)}")
     print(f"Malignancy probability: {probability:.1%}")
     print(f"Prediction at threshold {args.threshold:.2f}: {prediction}")
+
+    if args.occlusion_heatmap:
+        sensitivity = occlusion_sensitivity(models, image_tensor, probability)
+        scale = max(float(np.abs(sensitivity).max()), 1e-8)
+        colour_values = np.clip((sensitivity / scale + 1.0) / 2.0, 0.0, 1.0)
+        heatmap = (colormaps["coolwarm"](colour_values)[..., :3] * 255).astype(np.uint8)
+        # Match the inference preprocessing: resize to 256 then centre-crop 224.
+        display_image = cv2.resize(image, (256, 256), interpolation=cv2.INTER_LINEAR)[16:240, 16:240]
+        overlay = cv2.addWeighted(display_image, 0.55, heatmap, 0.45, 0)
+
+        output_path = Path(args.heatmap_output) if args.heatmap_output else \
+            Path("outputs/heatmaps") / f"{image_path.stem}_occlusion.png"
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        Image.fromarray(overlay).save(output_path)
+        print(f"Ensemble occlusion heatmap saved to: {output_path}")
+        print("Red: masking lowered malignancy probability. Blue: masking raised it. White: little effect.")
 
 
 if __name__ == "__main__":
