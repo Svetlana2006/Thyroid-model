@@ -60,7 +60,7 @@ All three: single logit output (`BCEWithLogitsLoss`), sigmoid at inference.
 - Base LR: 3e-4 for head-only phase, drop to 1e-5 once backbone unfreezes (discriminative LR: backbone gets base_lr × 0.1, head gets base_lr).
 - Batch size: 32 (ResNet/EfficientNet), 16 (Swin, due to memory).
 - Mixed precision (`torch.cuda.amp`) throughout.
-- Max epochs: 60, **early stopping** on val AUC, patience=10, min_delta=0.001.
+- Max epochs: 25. This is an intentional cap because validation performance was already strong by approximately epoch 15; **early stopping** on val AUC (patience=10, min_delta=0.001) retains the best validation checkpoint and limits unnecessary training.
 - Gradient clipping: max_norm=1.0.
 
 ---
