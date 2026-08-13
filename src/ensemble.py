@@ -21,6 +21,17 @@ def soft_vote_ensemble(logits_list: List[np.ndarray]) -> np.ndarray:
     return np.log(mean_prob / (1 - mean_prob))
 
 
+def weighted_vote_ensemble(logits_list: List[np.ndarray], weights: List[float]) -> np.ndarray:
+    """Apply preselected probability-space weights without fitting on these inputs."""
+    if len(logits_list) != len(weights):
+        raise ValueError("logits_list and weights must have the same length")
+    if not np.isclose(sum(weights), 1.0):
+        raise ValueError("ensemble weights must sum to 1")
+    probs = [1.0 / (1.0 + np.exp(-np.clip(logits, -500, 500))) for logits in logits_list]
+    weighted_probs = np.clip(sum(weight * prob for weight, prob in zip(weights, probs)), 1e-7, 1 - 1e-7)
+    return np.log(weighted_probs / (1 - weighted_probs))
+
+
 def weighted_ensemble(
     logits_list: List[np.ndarray],
     labels: np.ndarray,
@@ -61,10 +72,7 @@ def weighted_ensemble(
 
     _search(1.0, [], 0)
 
-    best_probs = sum(w * p for w, p in zip(best_weights, probs_list))
-    best_probs = np.clip(best_probs, 1e-7, 1 - 1e-7)
-    best_logits = np.log(best_probs / (1 - best_probs))
-    return best_logits, best_weights
+    return weighted_vote_ensemble(logits_list, best_weights), best_weights
 
 
 def deep_ensemble_uncertainty(

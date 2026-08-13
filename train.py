@@ -2,10 +2,9 @@
 Main training script for TN5000.
 Runs the full pipeline:
 1. Optuna hyperparameter search (optional)
-2. Final 5-fold cross-validation on 70% train+val pool (plan §2)
-3. Test set evaluation with bootstrap CI
-4. Ensemble evaluation
-5. Results table
+2. Validation-guided checkpoint selection and test-set evaluation with bootstrap CI
+3. Ensemble evaluation, with weights fitted only on validation predictions
+4. Results table
 
 Usage:
     python train.py --arch resnet50 --search --n_trials 40
@@ -23,8 +22,7 @@ from pathlib import Path
 
 import numpy as np
 import torch
-from sklearn.model_selection import StratifiedKFold
-from torch.utils.data import DataLoader, Subset
+from torch.utils.data import DataLoader
 
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent))
@@ -35,6 +33,7 @@ from src.ensemble import (
     flag_low_confidence,
     soft_vote_ensemble,
     weighted_ensemble,
+    weighted_vote_ensemble,
 )
 from src.metrics import (
     TemperatureScaling,
@@ -221,6 +220,8 @@ def run_training(
     result_dir.mkdir(parents=True, exist_ok=True)
     np.save(result_dir / f"{arch}_seed{seed}_logits.npy", test_logits)
     np.save(result_dir / f"{arch}_seed{seed}_labels.npy", test_labels)
+    np.save(result_dir / f"{arch}_seed{seed}_val_logits.npy", val_metrics["logits"])
+    np.save(result_dir / "validation_labels.npy", val_metrics["labels"])
     with open(result_dir / f"{arch}_seed{seed}_metrics.json", "w") as f:
         json.dump({"metrics": metrics, "ci": ci, "config": config, "history": {k: list(v) for k, v in history.items() if isinstance(v, list)}}, f, indent=2)
 
@@ -228,8 +229,37 @@ def run_training(
     return model, test_logits, test_labels, metrics
 
 
+def export_validation_logits_from_checkpoints(device: torch.device):
+    """Create validation predictions from saved checkpoints without training."""
+    from src.trainer import evaluate
+
+    result_dir = OUTPUTS / "results"
+    result_dir.mkdir(parents=True, exist_ok=True)
+    validation_labels = TN5000Dataset(str(DATA_ROOT), VAL_TXT).get_labels()
+    for checkpoint_path in sorted((OUTPUTS / "checkpoints").glob("*_seed*_best.pt")):
+        stem = checkpoint_path.stem.removesuffix("_best")
+        arch, _, seed_text = stem.rpartition("_seed")
+        output_path = result_dir / f"{stem}_val_logits.npy"
+        if not arch or not seed_text.isdigit() or output_path.exists():
+            continue
+        checkpoint = torch.load(checkpoint_path, map_location=device, weights_only=False)
+        config = checkpoint["config"]
+        model = build_model(arch, dropout=config.get("dropout", 0.3)).to(device)
+        model.load_state_dict(checkpoint["model_state_dict"])
+        val_dataset = TN5000Dataset(str(DATA_ROOT), VAL_TXT, transform=get_val_transforms())
+        val_loader = DataLoader(val_dataset, batch_size=config.get("batch_size", ARCH_BATCH_SIZE[arch]) * 2,
+                                shuffle=False, num_workers=_N_WORK, pin_memory=_PIN_MEM)
+        val_metrics = evaluate(model, val_loader, device, config["pos_weight"], config.get("pos_weight_scale", 1.0))
+        if not np.array_equal(validation_labels, val_metrics["labels"]):
+            raise RuntimeError("Validation-label ordering differs between checkpoints.")
+        np.save(output_path, val_metrics["logits"])
+        print(f"Saved validation logits: {stem}")
+    np.save(result_dir / "validation_labels.npy", validation_labels)
+    print("Validation predictions exported; no models were trained or modified.")
+
+
 def run_ensemble_evaluation():
-    """Load saved logits and run ensemble analysis."""
+    """Evaluate test predictions; fit any ensemble weights on validation data only."""
     result_dir = OUTPUTS / "results"
     if not result_dir.exists():
         print("No results found. Run training first.")
@@ -273,11 +303,25 @@ def run_ensemble_evaluation():
     all_results["Simple Ensemble (9)"] = m
 
     # Weighted ensemble (optimise on labels — note: only valid if these are val labels)
-    weighted_logits, weights = weighted_ensemble(all_logits_list, labels)
-    m = compute_metrics(weighted_logits, labels)
-    m["ece"] = ece_score(sigmoid(weighted_logits), labels)
-    all_results["Weighted Ensemble"] = m
-    print(f"Optimal weights: {[f'{w:.1f}' for w in weights]}")
+    validation_labels_path = result_dir / "validation_labels.npy"
+    validation_logits = {}
+    if validation_labels_path.exists():
+        for model_name in all_logits:
+            path = result_dir / f"{model_name.replace('_s', '_seed')}_val_logits.npy"
+            if path.exists():
+                validation_logits[model_name] = np.load(path)
+    if len(validation_logits) == len(all_logits):
+        validation_labels = np.load(validation_labels_path)
+        _, weights = weighted_ensemble([validation_logits[name] for name in all_logits], validation_labels)
+        weighted_test_logits = weighted_vote_ensemble(all_logits_list, weights)
+        m = compute_metrics(weighted_test_logits, labels)
+        m["ece"] = ece_score(sigmoid(weighted_test_logits), labels)
+        all_results["Weighted Ensemble (validation-fitted)"] = m
+        with open(result_dir / "ensemble_weights.json", "w") as f:
+            json.dump({"fit_split": "validation", "models": list(all_logits), "weights": weights}, f, indent=2)
+        print(f"Validation-fitted weights: {[f'{w:.1f}' for w in weights]}")
+    else:
+        print("Weighted ensemble skipped: run --export-validation-logits first (no retraining).")
 
     # Uncertainty
     mean_logits, variance = deep_ensemble_uncertainty(all_logits)
@@ -323,6 +367,8 @@ def main():
                         help="Number of Optuna trials")
     parser.add_argument("--ensemble", action="store_true",
                         help="Run ensemble evaluation on saved logits")
+    parser.add_argument("--export-validation-logits", action="store_true",
+                        help="Generate validation logits from checkpoints without training")
     parser.add_argument("--all_archs", action="store_true",
                         help="Train all 3 architectures × 3 seeds")
     parser.add_argument("--device", type=str, default=None,
@@ -334,6 +380,10 @@ def main():
     device = torch.device(args.device) if args.device else \
              torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Device: {device}")
+
+    if args.export_validation_logits:
+        export_validation_logits_from_checkpoints(device)
+        return
 
     if args.ensemble:
         run_ensemble_evaluation()

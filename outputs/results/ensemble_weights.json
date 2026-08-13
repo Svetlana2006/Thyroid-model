@@ -1,0 +1,25 @@
+{
+  "fit_split": "validation",
+  "models": [
+    "resnet50_s0",
+    "resnet50_s1",
+    "resnet50_s2",
+    "efficientnet_b3_s0",
+    "efficientnet_b3_s1",
+    "efficientnet_b3_s2",
+    "swin_tiny_s0",
+    "swin_tiny_s1",
+    "swin_tiny_s2"
+  ],
+  "weights": [
+    0.1,
+    0.0,
+    0.1,
+    0.0,
+    0.0,
+    0.1,
+    0.1,
+    0.4,
+    0.2
+  ]
+}
