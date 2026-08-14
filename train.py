@@ -208,6 +208,7 @@ def run_training(
     metrics["ece_before"] = ece_score(sigmoid(test_logits), test_labels)
     metrics["ece_after"] = ece_score(calibrated_probs, test_labels)
     metrics["temperature"] = ts.temperature
+    metrics["youden_threshold"] = threshold
 
     ci = bootstrap_metrics(test_logits, test_labels, threshold=threshold)
 
