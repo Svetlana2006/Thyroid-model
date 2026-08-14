@@ -71,14 +71,8 @@ function App() {
           <div className="app__brand">
             <div className="app__logo">
               <svg viewBox="0 0 32 32" fill="none" width="36" height="36">
-                <rect width="32" height="32" rx="8" fill="url(#logo-grad)" />
+                <rect width="32" height="32" rx="8" fill="#2563eb" />
                 <path d="M16 7v18M10 12h12M12 17h8" stroke="#fff" strokeWidth="2" strokeLinecap="round" />
-                <defs>
-                  <linearGradient id="logo-grad" x1="0" y1="0" x2="32" y2="32">
-                    <stop stopColor="#6366f1" />
-                    <stop offset="1" stopColor="#8b5cf6" />
-                  </linearGradient>
-                </defs>
               </svg>
             </div>
             <div>
