@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite",
     "backend": "cd .. && python -m uvicorn api.main:app --reload --port 8000",
-    "fullstack": "concurrently -n backend,frontend -c magenta,cyan \"npm run backend\" \"npm run dev\"",
+    "wait-backend": "wait-on http-get://127.0.0.1:8000/api/health --timeout 60000",
+    "fullstack": "concurrently -n backend,frontend -c magenta,cyan \"npm run backend\" \"npm run wait-backend && npm run dev\"",
     "build": "tsc -b && vite build",
     "lint": "oxlint",
     "preview": "vite preview"
@@ -23,6 +24,7 @@
     "concurrently": "^10.0.4",
     "oxlint": "^1.75.0",
     "typescript": "~6.0.2",
-    "vite": "^8.2.0"
+    "vite": "^8.2.0",
+    "wait-on": "^9.1.0"
   }
 }
