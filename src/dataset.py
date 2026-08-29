@@ -111,3 +111,63 @@ class TN5000Dataset(Dataset):
         n_malignant = (labels == 1).sum()
         pos_weight = n_benign / n_malignant
         return pos_weight
+
+
+class AUITDDataset(Dataset):
+    """
+    Algeria Ultrasound Images Thyroid Dataset (AUITD).
+    Used to expand training set.
+    """
+    def __init__(self, data_root: str, transform: Optional[Callable] = None):
+        self.data_root = Path(data_root)
+        self.transform = transform
+        self.samples = []
+        
+        # Traverse dataset directory
+        dataset_dir = self.data_root / "dataset thyroid"
+        
+        # Use both train and test splits to expand the main dataset
+        for split in ["train", "test"]:
+            split_dir = dataset_dir / split
+            if not split_dir.exists():
+                continue
+                
+            for class_name in os.listdir(split_dir):
+                class_dir = split_dir / class_name
+                if not class_dir.is_dir():
+                    continue
+                    
+                label = None
+                if class_name.lower() == "benign":
+                    label = 0
+                elif class_name.lower() == "malignant":
+                    label = 1
+                else:
+                    # e.g., 'normal thyroid'
+                    continue
+                    
+                # Find all images recursively
+                for root, _, files in os.walk(class_dir):
+                    for file in files:
+                        if file.lower().endswith(('.jpg', '.jpeg', '.png')):
+                            self.samples.append({
+                                "img_path": os.path.join(root, file),
+                                "label": label
+                            })
+
+    def __len__(self):
+        return len(self.samples)
+
+    def __getitem__(self, idx):
+        sample = self.samples[idx]
+        image = Image.open(sample["img_path"]).convert("RGB")
+        image = np.array(image)
+        
+        if self.transform is not None:
+            augmented = self.transform(image=image)
+            image = augmented["image"]
+            
+        return image, torch.tensor(sample["label"], dtype=torch.float32)
+
+    def get_labels(self):
+        return np.array([s["label"] for s in self.samples])
