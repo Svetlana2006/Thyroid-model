@@ -14,44 +14,36 @@ from src.models import build_model
 from src.transforms import get_val_transforms
 from src.metrics import compute_metrics
 
-class AUITDDataset(Dataset):
+class DiveshDataset(Dataset):
     def __init__(self, data_root, transform=None):
         self.data_root = data_root
         self.transform = transform
         self.samples = []
         
         # Traverse dataset directory
-        dataset_dir = os.path.join(data_root, "dataset thyroid")
+        dataset_dir = os.path.join(data_root, "Thyroid Data")
         
-        for split in ["train", "test"]:
-            split_dir = os.path.join(dataset_dir, split)
-            if not os.path.exists(split_dir):
-                continue
-                
-            for class_name in os.listdir(split_dir):
-                class_dir = os.path.join(split_dir, class_name)
-                if not os.path.isdir(class_dir):
-                    continue
+        # Benign = 0
+        class_0_dir = os.path.join(dataset_dir, "0")
+        if os.path.exists(class_0_dir):
+            for img_file in glob.glob(os.path.join(class_0_dir, "*.*")):
+                if img_file.lower().endswith(('.jpg', '.jpeg', '.png')):
+                    self.samples.append({
+                        "img_path": img_file,
+                        "label": 0
+                    })
                     
-                label = None
-                if class_name.lower() == "benign":
-                    label = 0
-                elif class_name.lower() == "malignant":
-                    label = 1
-                else:
-                    # e.g., 'normal thyroid'
-                    continue
+        # Malignant = 1
+        class_1_dir = os.path.join(dataset_dir, "1")
+        if os.path.exists(class_1_dir):
+            for img_file in glob.glob(os.path.join(class_1_dir, "*.*")):
+                if img_file.lower().endswith(('.jpg', '.jpeg', '.png')):
+                    self.samples.append({
+                        "img_path": img_file,
+                        "label": 1
+                    })
                     
-                # Find all images recursively in this class_dir
-                for root, _, files in os.walk(class_dir):
-                    for file in files:
-                        if file.lower().endswith(('.jpg', '.jpeg', '.png')):
-                            self.samples.append({
-                                "img_path": os.path.join(root, file),
-                                "label": label
-                            })
-                            
-        print(f"Loaded {len(self.samples)} valid images from AUITD dataset.")
+        print(f"Loaded {len(self.samples)} valid images from dataset.")
 
     def __len__(self):
         return len(self.samples)
@@ -122,7 +114,7 @@ def evaluate_models_on_dataset(dataset, batch_size=64):
     for model_name, model_logits in all_test_logits.items():
         results[model_name] = compute_metrics(model_logits, labels)
         
-    print("\nExternal Validation Results (AUITD Dataset):")
+    print("\nExternal Validation Results:")
     for name, metric in results.items():
         print(f"\n{name}:")
         print(f"  AUC: {metric['auc']:.4f}")
@@ -133,15 +125,15 @@ def evaluate_models_on_dataset(dataset, batch_size=64):
         
     # Save results
     os.makedirs("outputs/results", exist_ok=True)
-    out_path = "outputs/results/auitd_validation_results.json"
+    out_path = "outputs/results/diveshzz_validation_results.json"
     with open(out_path, "w") as f:
         json.dump(results, f, indent=2)
     print(f"\nResults saved to {out_path}")
 
 if __name__ == "__main__":
-    print("Downloading AUITD dataset...")
-    data_root = kagglehub.dataset_download('azouzmaroua/algeria-ultrasound-images-thyroid-dataset-auitd')
+    print("Downloading dataset...")
+    data_root = kagglehub.dataset_download('diveshzz/thyroid-cancer-classification-ultrasound-dataset')
     print(f"Dataset path: {data_root}")
     
-    dataset = AUITDDataset(data_root, transform=get_val_transforms())
+    dataset = DiveshDataset(data_root, transform=get_val_transforms())
     evaluate_models_on_dataset(dataset)
