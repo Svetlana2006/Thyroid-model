@@ -14,31 +14,44 @@ from src.models import build_model
 from src.transforms import get_val_transforms
 from src.metrics import compute_metrics
 
-class SimpleThyroidDataset(Dataset):
+class AUITDDataset(Dataset):
     def __init__(self, data_root, transform=None):
         self.data_root = data_root
         self.transform = transform
         self.samples = []
         
-        # Benign = 0
-        benign_dir = os.path.join(data_root, "benign")
-        if os.path.exists(benign_dir):
-            for img_file in glob.glob(os.path.join(benign_dir, "*.jpg")):
-                self.samples.append({
-                    "img_path": img_file,
-                    "label": 0
-                })
+        # Traverse dataset directory
+        dataset_dir = os.path.join(data_root, "dataset thyroid")
+        
+        for split in ["train", "test"]:
+            split_dir = os.path.join(dataset_dir, split)
+            if not os.path.exists(split_dir):
+                continue
                 
-        # Malignant = 1
-        malignant_dir = os.path.join(data_root, "malignant")
-        if os.path.exists(malignant_dir):
-            for img_file in glob.glob(os.path.join(malignant_dir, "*.jpg")):
-                self.samples.append({
-                    "img_path": img_file,
-                    "label": 1
-                })
-                
-        print(f"Loaded {len(self.samples)} valid images from dataset.")
+            for class_name in os.listdir(split_dir):
+                class_dir = os.path.join(split_dir, class_name)
+                if not os.path.isdir(class_dir):
+                    continue
+                    
+                label = None
+                if class_name.lower() == "benign":
+                    label = 0
+                elif class_name.lower() == "malignant":
+                    label = 1
+                else:
+                    # e.g., 'normal thyroid'
+                    continue
+                    
+                # Find all images recursively in this class_dir
+                for root, _, files in os.walk(class_dir):
+                    for file in files:
+                        if file.lower().endswith(('.jpg', '.jpeg', '.png')):
+                            self.samples.append({
+                                "img_path": os.path.join(root, file),
+                                "label": label
+                            })
+                            
+        print(f"Loaded {len(self.samples)} valid images from AUITD dataset.")
 
     def __len__(self):
         return len(self.samples)
@@ -109,7 +122,7 @@ def evaluate_models_on_dataset(dataset, batch_size=64):
     for model_name, model_logits in all_test_logits.items():
         results[model_name] = compute_metrics(model_logits, labels)
         
-    print("\nExternal Validation Results:")
+    print("\nExternal Validation Results (AUITD Dataset):")
     for name, metric in results.items():
         print(f"\n{name}:")
         print(f"  AUC: {metric['auc']:.4f}")
@@ -120,15 +133,15 @@ def evaluate_models_on_dataset(dataset, batch_size=64):
         
     # Save results
     os.makedirs("outputs/results", exist_ok=True)
-    out_path = "outputs/results/external_validation_results.json"
+    out_path = "outputs/results/auitd_validation_results.json"
     with open(out_path, "w") as f:
         json.dump(results, f, indent=2)
     print(f"\nResults saved to {out_path}")
 
 if __name__ == "__main__":
-    print("Downloading dataset...")
-    data_root = kagglehub.dataset_download('sowmyaabirami/thyroid-ultrasound-dataset')
+    print("Downloading AUITD dataset...")
+    data_root = kagglehub.dataset_download('azouzmaroua/algeria-ultrasound-images-thyroid-dataset-auitd')
     print(f"Dataset path: {data_root}")
     
-    dataset = SimpleThyroidDataset(data_root, transform=get_val_transforms())
+    dataset = AUITDDataset(data_root, transform=get_val_transforms())
     evaluate_models_on_dataset(dataset)
