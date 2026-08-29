@@ -24,6 +24,12 @@ class DDTIDataset(Dataset):
         # DDTI Dataset has XMLs and JPEGs. We recursively find XMLs.
         xml_files = glob.glob(os.path.join(data_root, "**", "*.xml"), recursive=True)
         
+        # Debug print for first 5 XML structures
+        for f in xml_files[:5]:
+            root = ET.parse(f).getroot()
+            print(f, [child.tag for child in root])
+            
+        
         for xml_file in xml_files:
             try:
                 tree = ET.parse(xml_file)
@@ -36,7 +42,7 @@ class DDTIDataset(Dataset):
                 # Map TIRADS to binary classification
                 if tirads in ['2', '3']:
                     label = 0
-                elif tirads in ['4a', '4b', '4c', '5']:
+                elif tirads in ['4c', '5']:
                     label = 1
                 else:
                     continue
