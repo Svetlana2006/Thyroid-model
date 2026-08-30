@@ -27,7 +27,7 @@ from torch.utils.data import DataLoader
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent))
 
-from src.dataset import TN5000Dataset, AUITDDataset
+from src.dataset import TN5000Dataset, AUITDDataset, DDTIUniqueDataset
 from src.ensemble import (
     deep_ensemble_uncertainty,
     flag_low_confidence,
@@ -158,15 +158,21 @@ def run_training(
         "data_raw/auitd_dataset", transform=get_train_transforms()
     )
     
+    ddti_dataset = DDTIUniqueDataset(
+        "data_raw/ddti_unique_dataset", transform=get_train_transforms()
+    )
+    
     # Calculate pos_weight BEFORE concatenating
     tn5000_labels = train_dataset_tn5000.get_labels()
     auitd_labels = auitd_dataset.get_labels()
-    combined_labels = np.concatenate([tn5000_labels, auitd_labels])
+    ddti_labels = ddti_dataset.get_labels()
+    
+    combined_labels = np.concatenate([tn5000_labels, auitd_labels, ddti_labels])
     n_benign = (combined_labels == 0).sum()
     n_malignant = (combined_labels == 1).sum()
     pos_weight = n_benign / n_malignant
     
-    train_dataset = torch.utils.data.ConcatDataset([train_dataset_tn5000, auitd_dataset])
+    train_dataset = torch.utils.data.ConcatDataset([train_dataset_tn5000, auitd_dataset, ddti_dataset])
     
     val_dataset = TN5000Dataset(
         str(DATA_ROOT), VAL_TXT, transform=get_val_transforms()

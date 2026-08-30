@@ -171,3 +171,49 @@ class AUITDDataset(Dataset):
 
     def get_labels(self):
         return np.array([s["label"] for s in self.samples])
+
+
+class DDTIUniqueDataset(Dataset):
+    """
+    Deduplicated DDTI dataset (strict labels).
+    Used to expand training set.
+    """
+    def __init__(self, data_root: str, transform=None):
+        self.data_root = Path(data_root)
+        self.transform = transform
+        self.samples = []
+        
+        # Traverse dataset directory
+        dataset_dir = self.data_root
+        
+        for class_name in ["benign", "malignant"]:
+            class_dir = dataset_dir / class_name
+            if not class_dir.exists():
+                continue
+                
+            label = 0 if class_name == "benign" else 1
+                
+            for root, _, files in os.walk(class_dir):
+                for file in files:
+                    if file.lower().endswith(('.jpg', '.jpeg', '.png')):
+                        self.samples.append({
+                            "img_path": os.path.join(root, file),
+                            "label": label
+                        })
+
+    def __len__(self):
+        return len(self.samples)
+
+    def __getitem__(self, idx):
+        sample = self.samples[idx]
+        image = Image.open(sample["img_path"]).convert("RGB")
+        image = np.array(image)
+        
+        if self.transform is not None:
+            augmented = self.transform(image=image)
+            image = augmented["image"]
+            
+        return image, torch.tensor(sample["label"], dtype=torch.float32)
+
+    def get_labels(self):
+        return np.array([s["label"] for s in self.samples])
