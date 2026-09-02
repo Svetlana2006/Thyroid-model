@@ -56,31 +56,31 @@
   },
   "deep_efficientnet_b3_logistic_regression": {
     "classifier": "efficientnet_b3_LogisticRegression",
-    "mean_accuracy": 0.9890000000000001,
-    "std_accuracy": 0.008000000000000007,
-    "mean_macro_f1": 0.9889979743191148,
-    "std_macro_f1": 0.008002232297761078,
+    "mean_accuracy": 0.9899999999999999,
+    "std_accuracy": 0.007071067811865481,
+    "mean_macro_f1": 0.9899992999374939,
+    "std_macro_f1": 0.007071668922817633,
     "per_fold_accuracy": [
-      0.99,
-      0.98,
       0.995,
       0.98,
+      0.99,
+      0.985,
       1.0
     ],
     "chance_level": 0.5
   },
   "deep_swin_tiny_logistic_regression": {
     "classifier": "swin_tiny_LogisticRegression",
-    "mean_accuracy": 0.994,
-    "std_accuracy": 0.0037416573867739447,
-    "mean_macro_f1": 0.9939997499787481,
-    "std_macro_f1": 0.0037418578675967274,
+    "mean_accuracy": 0.992,
+    "std_accuracy": 0.006000000000000005,
+    "mean_macro_f1": 0.9919997999949999,
+    "std_macro_f1": 0.006000150003750094,
     "per_fold_accuracy": [
+      0.995,
+      0.985,
+      0.985,
       1.0,
-      0.99,
-      0.995,
-      0.995,
-      0.99
+      0.995
     ],
     "chance_level": 0.5
   }
