@@ -1,0 +1,87 @@
+{
+  "image_stats_logistic_regression": {
+    "classifier": "LogisticRegression",
+    "mean_accuracy": 0.9920427659668615,
+    "std_accuracy": 0.0014125162021346434,
+    "mean_macro_f1": 0.9907037931036067,
+    "std_macro_f1": 0.0016669904042503315,
+    "per_fold_accuracy": [
+      0.99039780521262,
+      0.9910836762688614,
+      0.9945130315500685,
+      0.9924554183813443,
+      0.9917638984214139
+    ],
+    "chance_level": 0.6859651529702291
+  },
+  "image_stats_random_forest": {
+    "classifier": "RandomForest",
+    "mean_accuracy": 1.0,
+    "std_accuracy": 0.0,
+    "mean_macro_f1": 1.0,
+    "std_macro_f1": 0.0,
+    "per_fold_accuracy": [
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0
+    ],
+    "chance_level": 0.6859651529702291,
+    "feature_importances": {
+      "hf_energy": 0.3291007907021276,
+      "width": 0.22817795212014153,
+      "height": 0.2005923718759921,
+      "aspect_ratio_hw": 0.1332064783195773,
+      "edge_density": 0.08102969940281536,
+      "entropy": 0.022896779884510728,
+      "std_intensity": 0.0029411285020842053,
+      "mean_intensity": 0.0020547991927511045
+    }
+  },
+  "deep_resnet50_logistic_regression": {
+    "classifier": "resnet50_LogisticRegression",
+    "mean_accuracy": 0.999,
+    "std_accuracy": 0.0020000000000000018,
+    "mean_macro_f1": 0.998999974999375,
+    "std_macro_f1": 0.0020000500012500306,
+    "per_fold_accuracy": [
+      1.0,
+      0.995,
+      1.0,
+      1.0,
+      1.0
+    ],
+    "chance_level": 0.5
+  },
+  "deep_efficientnet_b3_logistic_regression": {
+    "classifier": "efficientnet_b3_LogisticRegression",
+    "mean_accuracy": 0.9890000000000001,
+    "std_accuracy": 0.008000000000000007,
+    "mean_macro_f1": 0.9889979743191148,
+    "std_macro_f1": 0.008002232297761078,
+    "per_fold_accuracy": [
+      0.99,
+      0.98,
+      0.995,
+      0.98,
+      1.0
+    ],
+    "chance_level": 0.5
+  },
+  "deep_swin_tiny_logistic_regression": {
+    "classifier": "swin_tiny_LogisticRegression",
+    "mean_accuracy": 0.994,
+    "std_accuracy": 0.0037416573867739447,
+    "mean_macro_f1": 0.9939997499787481,
+    "std_macro_f1": 0.0037418578675967274,
+    "per_fold_accuracy": [
+      1.0,
+      0.99,
+      0.995,
+      0.995,
+      0.99
+    ],
+    "chance_level": 0.5
+  }
+}

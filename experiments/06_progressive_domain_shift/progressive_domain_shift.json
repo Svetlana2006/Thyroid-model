@@ -1,0 +1,74 @@
+{
+  "1_Raw_Squashed": {
+    "classifier": "ResNet50_1_Raw_Squashed",
+    "mean_accuracy": 0.9709999999999999,
+    "std_accuracy": 0.00815475321515005,
+    "ci_lower": 0.9638520436487061,
+    "ci_upper": 0.9781479563512936,
+    "mean_macro_f1": 0.9709993999742175,
+    "confusion_matrix": [
+      [
+        974,
+        26
+      ],
+      [
+        32,
+        968
+      ]
+    ]
+  },
+  "2_AR_Preserving": {
+    "classifier": "ResNet50_2_AR_Preserving",
+    "mean_accuracy": 0.9735000000000001,
+    "std_accuracy": 0.007348469228349541,
+    "ci_lower": 0.9670587827237394,
+    "ci_upper": 0.9799412172762609,
+    "mean_macro_f1": 0.9734993343427132,
+    "confusion_matrix": [
+      [
+        977,
+        23
+      ],
+      [
+        30,
+        970
+      ]
+    ]
+  },
+  "3_AR_Normalized": {
+    "classifier": "ResNet50_3_AR_Normalized",
+    "mean_accuracy": 0.9970000000000001,
+    "std_accuracy": 0.0024494897427831666,
+    "ci_lower": 0.9948529275745799,
+    "ci_upper": 0.9991470724254203,
+    "mean_macro_f1": 0.9969999812498826,
+    "confusion_matrix": [
+      [
+        996,
+        4
+      ],
+      [
+        2,
+        998
+      ]
+    ]
+  },
+  "4_UI_Removed_Normalized": {
+    "classifier": "ResNet50_4_UI_Removed_Normalized",
+    "mean_accuracy": 0.9964999999999999,
+    "std_accuracy": 0.0025495097567963857,
+    "ci_lower": 0.9942652561668056,
+    "ci_upper": 0.9987347438331943,
+    "mean_macro_f1": 0.9964998843695895,
+    "confusion_matrix": [
+      [
+        993,
+        7
+      ],
+      [
+        0,
+        1000
+      ]
+    ]
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "datasets": {
+    "TN5000": 5000,
+    "AUITD": 2289,
+    "DDTI_unique": 1
+  },
+  "max_hamming_distance": 10,
+  "exact_duplicates": 0,
+  "near_duplicates": 0
+}
