@@ -23,6 +23,7 @@ import json
 import os
 import sys
 from pathlib import Path
+from PIL import Image as PILImage
 
 import numpy as np
 import torch
