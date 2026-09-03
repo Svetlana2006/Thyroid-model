@@ -168,6 +168,7 @@ class DomainAdversarialSwin(nn.Module):
     """Wraps SwinClassifier to add a domain head with GRL."""
     def __init__(self, base_model, num_domains=2, dropout=0.3):
         super().__init__()
+        self._base_model = base_model   # keep reference for freeze_epoch delegation
         self.backbone = base_model.backbone
         self.head = base_model.head
         self.domain_head = nn.Sequential(
@@ -178,11 +179,25 @@ class DomainAdversarialSwin(nn.Module):
             nn.Linear(256, num_domains)
         )
         self.use_dann = False
-        
+
+    def freeze_epoch(self, epoch: int):
+        """Delegate staged unfreezing to the underlying base model."""
+        self._base_model.freeze_epoch(epoch)
+
+    def get_param_groups(self, lr_head: float, lr_backbone: float):
+        """Discriminative LRs: backbone at lr_backbone, head+domain_head at lr_head."""
+        backbone_params = [p for p in self.backbone.parameters() if p.requires_grad]
+        head_params = list(self.head.parameters()) + list(self.domain_head.parameters())
+        groups = []
+        if backbone_params:
+            groups.append({"params": backbone_params, "lr": lr_backbone})
+        groups.append({"params": head_params, "lr": lr_head})
+        return groups
+
     def forward(self, x, alpha=None):
         features = self.backbone(x)
         logits = self.head(features)
-        
+
         if self.use_dann and self.training and alpha is not None:
             reverse_features = grl(features, alpha)
             domain_logits = self.domain_head(reverse_features)
@@ -243,14 +258,26 @@ def train_dann_model(
     optimizer, scheduler = build_optimizer_and_scheduler(
         model, lr_head, lr_backbone, weight_decay, config["T_0"], config["T_mult"], -1
     )
-    
+
     early_stopping = EarlyStopping(patience=config["patience"], min_delta=config["min_delta"])
     history = {"train_loss": [], "train_auc": [], "val_loss": [], "val_auc": []}
-    
+
     total_steps = max_epochs * len(train_loader)
     current_step = 0
     
+    _prev_trainable = sum(1 for p in model.parameters() if p.requires_grad)
+
     for epoch in range(1, max_epochs + 1):
+        # --- Staged unfreezing (mirrors src.trainer.train_model) ---
+        model.freeze_epoch(epoch)
+        _curr_trainable = sum(1 for p in model.parameters() if p.requires_grad)
+        if _curr_trainable != _prev_trainable:
+            print(f"  [unfreeze] Trainable params {_prev_trainable}→{_curr_trainable}. Rebuilding optimizer.")
+            optimizer, scheduler = build_optimizer_and_scheduler(
+                model, lr_head, lr_backbone, weight_decay, config["T_0"], config["T_mult"], last_epoch=epoch - 1
+            )
+            _prev_trainable = _curr_trainable
+
         model.train()
         total_loss, total_cls_loss, total_dom_loss = 0.0, 0.0, 0.0
         all_logits, all_labels = [], []
@@ -259,40 +286,43 @@ def train_dann_model(
             pbar = tqdm(train_loader, desc=f"Epoch {epoch:02d}", leave=False)
         except ImportError:
             pbar = train_loader
-            
+
         for idx, (images, labels, domains, global_indices) in enumerate(pbar):
             images, labels, domains = images.to(device), labels.to(device).float(), domains.to(device).long()
-            
+
             p = float(current_step) / total_steps
-            alpha = 2. / (1. + np.exp(-10 * p)) - 1 # GRL schedule
+            alpha = 2. / (1. + np.exp(-10 * p)) - 1  # GRL schedule
             current_step += 1
-            
+
             optimizer.zero_grad()
-            
+
+            # Label smoothing (matches src.trainer)
+            smooth_eps = config.get("label_smooth_eps", 0.05)
+
             if model.use_dann:
                 logits, domain_logits, _ = model(images, alpha=alpha)
                 logits = logits.squeeze(1)
-                
-                # Malignancy loss
-                loss_cls = F.binary_cross_entropy_with_logits(logits, labels, pos_weight=pos_weight)
-                
-                # Domain loss with sample-level reweighting to remove prevalence confounder
+
+                labels_smooth = labels * (1.0 - smooth_eps) + 0.5 * smooth_eps
+                loss_cls = F.binary_cross_entropy_with_logits(logits, labels_smooth, pos_weight=pos_weight)
+
                 batch_weights = sample_domain_weights[global_indices]
                 loss_dom_per_sample = F.cross_entropy(domain_logits, domains, reduction='none')
                 loss_dom = (loss_dom_per_sample * batch_weights).mean()
-                
+
                 loss = loss_cls + loss_dom
             else:
                 logits, _ = model(images)
                 logits = logits.squeeze(1)
-                loss_cls = F.binary_cross_entropy_with_logits(logits, labels, pos_weight=pos_weight)
+                labels_smooth = labels * (1.0 - smooth_eps) + 0.5 * smooth_eps
+                loss_cls = F.binary_cross_entropy_with_logits(logits, labels_smooth, pos_weight=pos_weight)
                 loss_dom = torch.tensor(0.0)
                 loss = loss_cls
-                
+
             loss.backward()
             torch.nn.utils.clip_grad_norm_(model.parameters(), config["grad_clip_norm"])
             optimizer.step()
-            
+
             total_loss += loss.item() * len(labels)
             total_cls_loss += loss_cls.item() * len(labels)
             total_dom_loss += loss_dom.item() * len(labels)
@@ -399,7 +429,8 @@ def run_single(run_name, use_aug, use_dann, divesh_root, device, dry_run=False):
     config = {
         "lr_head": 3e-4, "weight_decay": 1e-4, "dropout": 0.3,
         "pos_weight": pos_weight, "batch_size": BATCH_SIZE, "max_epochs": 25,
-        "patience": 10, "min_delta": 0.001, "T_0": 10, "T_mult": 2, "grad_clip_norm": 1.0,
+        "patience": 10, "min_delta": 0.001, "T_0": 10, "T_mult": 2,
+        "grad_clip_norm": 1.0, "label_smooth_eps": 0.05,
     }
     
     if dry_run:
