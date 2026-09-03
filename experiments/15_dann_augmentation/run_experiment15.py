@@ -254,8 +254,13 @@ def train_dann_model(
         model.train()
         total_loss, total_cls_loss, total_dom_loss = 0.0, 0.0, 0.0
         all_logits, all_labels = [], []
-        
-        for idx, (images, labels, domains, global_indices) in enumerate(train_loader):
+        try:
+            from tqdm import tqdm
+            pbar = tqdm(train_loader, desc=f"Epoch {epoch:02d}", leave=False)
+        except ImportError:
+            pbar = train_loader
+            
+        for idx, (images, labels, domains, global_indices) in enumerate(pbar):
             images, labels, domains = images.to(device), labels.to(device).float(), domains.to(device).long()
             
             p = float(current_step) / total_steps
