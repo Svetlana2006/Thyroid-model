@@ -39,6 +39,35 @@ from src.models import build_model
 from src.trainer import EarlyStopping, build_optimizer_and_scheduler
 from src.transforms import IMAGENET_MEAN, IMAGENET_STD
 
+# ── TPU / GPU / CPU device setup ──────────────────────────────────────────────
+try:
+    import torch_xla.core.xla_model as xm
+    _USE_TPU = True
+    _USE_GPU = False
+except ImportError:
+    xm = None
+    _USE_TPU = False
+    _USE_GPU = torch.cuda.is_available()
+
+def get_device():
+    if _USE_TPU:
+        return xm.xla_device()
+    elif _USE_GPU:
+        return torch.device("cuda")
+    return torch.device("cpu")
+
+def optimizer_step(optimizer):
+    """Use XLA optimizer step on TPU, standard step otherwise."""
+    if _USE_TPU:
+        xm.optimizer_step(optimizer)
+    else:
+        optimizer.step()
+
+def mark_step():
+    """XLA requires explicit graph execution after each batch on TPU."""
+    if _USE_TPU:
+        xm.mark_step()
+
 # ── Paths ─────────────────────────────────────────────────────────────────────
 EXP_DIR    = Path("experiments/15_dann_augmentation")
 DATA_ROOT  = Path("data_raw/TN5000_forReview")
@@ -52,8 +81,7 @@ for d in ["configs","checkpoints","logs","metrics","diagnostics"]:
 
 SEED = 0
 BATCH_SIZE = 16
-_USE_GPU = torch.cuda.is_available()
-_N_WORK  = 4 if _USE_GPU else 0
+_N_WORK  = 4 if (_USE_GPU or _USE_TPU) else 0
 
 
 # ── Reproducibility ───────────────────────────────────────────────────────────
@@ -321,7 +349,8 @@ def train_dann_model(
 
             loss.backward()
             torch.nn.utils.clip_grad_norm_(model.parameters(), config["grad_clip_norm"])
-            optimizer.step()
+            optimizer_step(optimizer)
+            mark_step()  # required on TPU; no-op on GPU/CPU
 
             total_loss += loss.item() * len(labels)
             total_cls_loss += loss_cls.item() * len(labels)
@@ -437,6 +466,7 @@ def run_single(run_name, use_aug, use_dann, divesh_root, device, dry_run=False):
         print("  [DRY RUN] skipping training.")
         return None
 
+    # pin_memory only applies to CUDA; must be False on TPU
     kw = dict(num_workers=_N_WORK, pin_memory=_USE_GPU, worker_init_fn=worker_init_fn)
     train_loader = DataLoader(train_ds_idx, batch_size=BATCH_SIZE, shuffle=True, **kw)
     val_loader = DataLoader(val_ds, batch_size=BATCH_SIZE*2, shuffle=False, **kw)
@@ -505,8 +535,8 @@ def main():
     parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args()
 
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    print(f"Device: {device}")
+    device = get_device()
+    print(f"Device: {device} | TPU={_USE_TPU} | GPU={_USE_GPU}")
     
     import kagglehub
     divesh_root = kagglehub.dataset_download("diveshzz/thyroid-cancer-classification-ultrasound-dataset")
