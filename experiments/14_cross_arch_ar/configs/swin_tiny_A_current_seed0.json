@@ -1,0 +1,19 @@
+{
+  "run": "swin_tiny_A_current_seed0",
+  "arch": "swin_tiny",
+  "pipeline": "A_current",
+  "seed": 0,
+  "lr_head": 0.0003,
+  "weight_decay": 0.0001,
+  "dropout": 0.3,
+  "pos_weight": 0.5291235710397387,
+  "pos_weight_scale": 1.0,
+  "batch_size": 16,
+  "max_epochs": 25,
+  "patience": 10,
+  "min_delta": 0.001,
+  "T_0": 10,
+  "T_mult": 2,
+  "label_smooth_eps": 0.05,
+  "grad_clip_norm": 1.0
+}
