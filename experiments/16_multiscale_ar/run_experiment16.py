@@ -457,7 +457,14 @@ def main():
             for k2, v2 in r.get("prediction_correlations", {}).items():
                 row[f"corr_{k2}"] = v2
             flat.append(row)
-        fieldnames = list(flat[0].keys())
+        
+        # Collect all unique fieldnames across all rows
+        fieldnames = []
+        for row in flat:
+            for k in row:
+                if k not in fieldnames:
+                    fieldnames.append(k)
+                    
         with open(outpath, "w", newline="") as f:
             w = csv.DictWriter(f, fieldnames=fieldnames)
             w.writeheader(); w.writerows(flat)
