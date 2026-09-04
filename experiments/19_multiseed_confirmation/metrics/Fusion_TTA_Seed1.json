@@ -1,0 +1,15 @@
+{
+  "seed": 1,
+  "best_epoch": 12,
+  "train_time_sec": 1359.5583662986755,
+  "param_count": 27792891,
+  "internal_auc": 0.9396152340074959,
+  "external_auc_1.00x": 0.8041894969740353,
+  "external_auc_avg": 0.810237955792716,
+  "generalization_gap": 0.12937727821477996,
+  "ext_auc_0.85x": 0.8028467929112166,
+  "ext_auc_1.15x": 0.8035994880805188,
+  "corr_0.85x_vs_1.00x": 0.9323,
+  "corr_0.85x_vs_1.15x": 0.9003,
+  "corr_1.00x_vs_1.15x": 0.9366
+}

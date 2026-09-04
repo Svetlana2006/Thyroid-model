@@ -1,0 +1,22 @@
+{
+  "internal_auc_mean": 0.9438493889818398,
+  "internal_auc_std": 0.006029145358736566,
+  "internal_auc_min": 0.934712849434751,
+  "internal_auc_max": 0.9519322209734589,
+  "internal_auc_median": 0.9457737274904774,
+  "external_auc_1.00x_mean": 0.807261968287022,
+  "external_auc_1.00x_std": 0.008666270817630209,
+  "external_auc_1.00x_min": 0.7977731502570443,
+  "external_auc_1.00x_max": 0.8225309646211579,
+  "external_auc_1.00x_median": 0.8041894969740353,
+  "external_auc_avg_mean": 0.8139917138456866,
+  "external_auc_avg_std": 0.007685055323990059,
+  "external_auc_avg_min": 0.8069330383288865,
+  "external_auc_avg_max": 0.8281594759332769,
+  "external_auc_avg_median": 0.810237955792716,
+  "generalization_gap_mean": 0.12985767513615318,
+  "generalization_gap_std": 0.006495819411580219,
+  "generalization_gap_min": 0.11905343706973892,
+  "generalization_gap_max": 0.13699734519942086,
+  "generalization_gap_median": 0.12937727821477996
+}
