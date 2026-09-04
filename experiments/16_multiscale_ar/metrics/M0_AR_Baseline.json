@@ -1,0 +1,23 @@
+{
+  "model": "M0_AR_Baseline",
+  "multiscale_train": false,
+  "tta": false,
+  "seed": 0,
+  "best_val_auc": 0.9425813333333333,
+  "internal_auc": 0.9451431303047717,
+  "internal_accuracy": 0.875,
+  "internal_sensitivity": 0.8700410396716827,
+  "internal_specificity": 0.8884758364312267,
+  "internal_f1": 0.9105225483178239,
+  "external_auc": 0.8082210798030411,
+  "external_accuracy": 0.756661316211878,
+  "external_sensitivity": 0.6041322314049586,
+  "external_specificity": 0.8535433070866142,
+  "external_f1": 0.6585585585585586,
+  "generalization_gap": 0.13692205050173056,
+  "ext_scale_aucs": {
+    "1.00x": 0.8082210798030411
+  },
+  "ext_avg_auc_tta": 0.8082210798030411,
+  "prediction_correlations": {}
+}

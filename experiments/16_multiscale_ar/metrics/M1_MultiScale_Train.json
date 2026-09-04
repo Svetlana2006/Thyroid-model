@@ -1,0 +1,23 @@
+{
+  "model": "M1_MultiScale_Train",
+  "multiscale_train": true,
+  "tta": false,
+  "seed": 0,
+  "best_val_auc": 0.9463253333333335,
+  "internal_auc": 0.9438056540157344,
+  "internal_accuracy": 0.863,
+  "internal_sensitivity": 0.8495212038303693,
+  "internal_specificity": 0.8996282527881041,
+  "internal_f1": 0.9006526468455403,
+  "external_auc": 0.8068736036094661,
+  "external_accuracy": 0.7598715890850722,
+  "external_sensitivity": 0.631404958677686,
+  "external_specificity": 0.8414698162729659,
+  "external_f1": 0.671353251318102,
+  "generalization_gap": 0.1369320504062682,
+  "ext_scale_aucs": {
+    "1.00x": 0.8068736036094661
+  },
+  "ext_avg_auc_tta": 0.8068736036094661,
+  "prediction_correlations": {}
+}
