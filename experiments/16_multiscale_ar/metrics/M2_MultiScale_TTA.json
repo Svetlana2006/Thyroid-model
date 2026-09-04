@@ -3,27 +3,27 @@
   "multiscale_train": false,
   "tta": true,
   "seed": 0,
-  "best_val_auc": 0.9401173333333334,
-  "internal_auc": 0.9466484268125854,
-  "internal_accuracy": 0.845,
-  "internal_sensitivity": 0.8235294117647058,
-  "internal_specificity": 0.9033457249070632,
-  "internal_f1": 0.8859455481972038,
-  "external_auc": 0.8262874991865686,
-  "external_accuracy": 0.7669341894060995,
-  "external_sensitivity": 0.5768595041322314,
-  "external_specificity": 0.8876640419947507,
-  "external_f1": 0.6578699340245052,
-  "generalization_gap": 0.1203609276260168,
+  "best_val_auc": 0.9452693333333333,
+  "internal_auc": 0.9411612142047102,
+  "internal_accuracy": 0.861,
+  "internal_sensitivity": 0.8577291381668947,
+  "internal_specificity": 0.8698884758364313,
+  "internal_f1": 0.9002153625269204,
+  "external_auc": 0.8137992668271838,
+  "external_accuracy": 0.7646869983948635,
+  "external_sensitivity": 0.6611570247933884,
+  "external_specificity": 0.8304461942257217,
+  "external_f1": 0.6858122588941278,
+  "generalization_gap": 0.12736194737752637,
   "ext_scale_aucs": {
-    "0.85x": 0.8196754951085661,
-    "1.00x": 0.8180924491876532,
-    "1.15x": 0.8172642675863865
+    "0.85x": 0.8115954100778725,
+    "1.00x": 0.8077842129237978,
+    "1.15x": 0.8006672306457561
   },
-  "ext_avg_auc_tta": 0.8262874991865686,
+  "ext_avg_auc_tta": 0.8137992668271838,
   "prediction_correlations": {
-    "0.85x_vs_1.00x": 0.9297,
-    "0.85x_vs_1.15x": 0.8991,
-    "1.00x_vs_1.15x": 0.935
+    "0.85x_vs_1.00x": 0.9323,
+    "0.85x_vs_1.15x": 0.8953,
+    "1.00x_vs_1.15x": 0.9297
   }
 }

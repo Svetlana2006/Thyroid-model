@@ -1,0 +1,106 @@
+[
+  {
+    "model": "M0_AR_Baseline",
+    "multiscale_train": false,
+    "tta": false,
+    "seed": 0,
+    "best_val_auc": 0.9485653333333334,
+    "internal_auc": 0.9480215013298481,
+    "internal_accuracy": 0.885,
+    "internal_sensitivity": 0.8796169630642955,
+    "internal_specificity": 0.8996282527881041,
+    "internal_f1": 0.9179157744468237,
+    "external_auc": 0.7990325589466607,
+    "external_accuracy": 0.750561797752809,
+    "external_sensitivity": 0.6190082644628099,
+    "external_specificity": 0.8341207349081364,
+    "external_f1": 0.6584615384615384,
+    "generalization_gap": 0.14898894238318738,
+    "ext_scale_aucs": {
+      "1.00x": 0.7990325589466607
+    },
+    "ext_avg_auc_tta": 0.7990325589466607,
+    "prediction_correlations": {}
+  },
+  {
+    "model": "M1_MultiScale_Train",
+    "multiscale_train": true,
+    "tta": false,
+    "seed": 0,
+    "best_val_auc": 0.9490666666666666,
+    "internal_auc": 0.9445735586531665,
+    "internal_accuracy": 0.88,
+    "internal_sensitivity": 0.8796169630642955,
+    "internal_specificity": 0.8810408921933085,
+    "internal_f1": 0.914651493598862,
+    "external_auc": 0.8056532396260384,
+    "external_accuracy": 0.7556982343499198,
+    "external_sensitivity": 0.6760330578512397,
+    "external_specificity": 0.8062992125984252,
+    "external_f1": 0.6825198164372132,
+    "generalization_gap": 0.1389203190271281,
+    "ext_scale_aucs": {
+      "1.00x": 0.8056532396260384
+    },
+    "ext_avg_auc_tta": 0.8056532396260384,
+    "prediction_correlations": {}
+  },
+  {
+    "model": "M2_MultiScale_TTA",
+    "multiscale_train": false,
+    "tta": true,
+    "seed": 0,
+    "best_val_auc": 0.9452693333333333,
+    "internal_auc": 0.9411612142047102,
+    "internal_accuracy": 0.861,
+    "internal_sensitivity": 0.8577291381668947,
+    "internal_specificity": 0.8698884758364313,
+    "internal_f1": 0.9002153625269204,
+    "external_auc": 0.8137992668271838,
+    "external_accuracy": 0.7646869983948635,
+    "external_sensitivity": 0.6611570247933884,
+    "external_specificity": 0.8304461942257217,
+    "external_f1": 0.6858122588941278,
+    "generalization_gap": 0.12736194737752637,
+    "ext_scale_aucs": {
+      "0.85x": 0.8115954100778725,
+      "1.00x": 0.8077842129237978,
+      "1.15x": 0.8006672306457561
+    },
+    "ext_avg_auc_tta": 0.8137992668271838,
+    "prediction_correlations": {
+      "0.85x_vs_1.00x": 0.9323,
+      "0.85x_vs_1.15x": 0.8953,
+      "1.00x_vs_1.15x": 0.9297
+    }
+  },
+  {
+    "model": "M3_MultiScale_Both",
+    "multiscale_train": true,
+    "tta": true,
+    "seed": 0,
+    "best_val_auc": 0.9389973333333334,
+    "internal_auc": 0.9455296253540751,
+    "internal_accuracy": 0.869,
+    "internal_sensitivity": 0.8563611491108071,
+    "internal_specificity": 0.9033457249070632,
+    "internal_f1": 0.9052783803326103,
+    "external_auc": 0.7984225938699812,
+    "external_accuracy": 0.7576243980738363,
+    "external_sensitivity": 0.6537190082644628,
+    "external_specificity": 0.8236220472440945,
+    "external_f1": 0.676936243046641,
+    "generalization_gap": 0.147107031484094,
+    "ext_scale_aucs": {
+      "0.85x": 0.7923255460835991,
+      "1.00x": 0.7908483546994642,
+      "1.15x": 0.7848250580247718
+    },
+    "ext_avg_auc_tta": 0.7984225938699812,
+    "prediction_correlations": {
+      "0.85x_vs_1.00x": 0.9178,
+      "0.85x_vs_1.15x": 0.8856,
+      "1.00x_vs_1.15x": 0.9195
+    }
+  }
+]
