@@ -313,7 +313,7 @@ def main():
     prec, rec, _ = precision_recall_curve(ext_labels, ext_ensemble_tta_logits)
     pr_auc = auc(rec, prec)
 
-    print(f"\nFINAL INDEPENDENT VALIDATION RESULTS (DDTI)")
+    print(f"\nFINAL INDEPENDENT VALIDATION RESULTS (DIVESH)")
     print(f"Total Samples: {len(ext_labels)} (Benign: {(ext_labels==0).sum()}, Malignant: {(ext_labels==1).sum()})")
     print(f"AUROC (TTA):   {auc_tta:.4f} (95% CI: {ci_l:.4f} - {ci_u:.4f})")
     print(f"AUROC (1.00x): {auc_1x:.4f}")
@@ -338,7 +338,7 @@ def main():
         "accuracy": float(m_tta['accuracy']),
         "sensitivity": float(m_tta['sensitivity']),
         "specificity": float(m_tta['specificity']),
-        "ppv": float(m_tta.get('ppv', m_tta['precision'])),
+        "ppv": float(m_tta['ppv']),
         "npv": float(m_tta['npv']),
         "f1": float(m_tta['f1'])
     }
