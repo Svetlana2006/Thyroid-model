@@ -323,7 +323,7 @@ def main():
 
     # ── Outputs ───────────────────────────────────────────────────────────────
     out = {
-        "dataset": "DDTI",
+        "dataset": "Divesh",
         "samples": len(ext_labels),
         "benign_count": int((ext_labels==0).sum()),
         "malignant_count": int((ext_labels==1).sum()),
