@@ -1,0 +1,14 @@
+{
+  "model": "Exp18_Fusion_TTA",
+  "checkpoint": "experiments/17_multilevel_fusion/checkpoints/M1_Multilevel_Fusion_best.pt",
+  "internal_auc": 0.9481333814756991,
+  "external_auc": 0.8205188607622395,
+  "generalization_gap": 0.1276145207134597,
+  "ext_auc_0.85x": 0.8129060107156028,
+  "ext_auc_1.00x": 0.8161024706622417,
+  "ext_auc_1.15x": 0.8135341966551701,
+  "ext_auc_avg": 0.8205188607622395,
+  "corr_0.85x_vs_1.00x": 0.9351,
+  "corr_0.85x_vs_1.15x": 0.905,
+  "corr_1.00x_vs_1.15x": 0.9416
+}
