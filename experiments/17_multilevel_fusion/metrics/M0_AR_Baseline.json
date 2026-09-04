@@ -1,0 +1,22 @@
+{
+  "model": "M0_AR_Baseline",
+  "use_fusion": false,
+  "seed": 0,
+  "param_info": {
+    "total": 27716475,
+    "trainable_at_init": 197121,
+    "fusion_head": 197121
+  },
+  "best_val_auc": 0.9442133333333333,
+  "internal_auc": 0.9474773569841181,
+  "internal_accuracy": 0.882,
+  "internal_sensitivity": 0.8850889192886456,
+  "internal_specificity": 0.8736059479553904,
+  "internal_f1": 0.9164305949008499,
+  "external_auc": 0.8062449838398299,
+  "external_accuracy": 0.7592295345104334,
+  "external_sensitivity": 0.7066115702479339,
+  "external_specificity": 0.7926509186351706,
+  "external_f1": 0.6951219512195121,
+  "generalization_gap": 0.14123237314428816
+}
