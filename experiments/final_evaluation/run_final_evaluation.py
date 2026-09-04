@@ -31,7 +31,7 @@ from torch.utils.data import DataLoader
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 import timm
-from src.dataset import DDTIUniqueDataset, TN5000Dataset
+from src.dataset import TN5000Dataset
 from src.metrics import compute_metrics, youden_threshold
 from src.transforms import IMAGENET_MEAN, IMAGENET_STD
 
@@ -39,7 +39,6 @@ from src.transforms import IMAGENET_MEAN, IMAGENET_STD
 EXP_DIR    = Path("experiments/final_evaluation")
 DATA_ROOT  = Path("data_raw/TN5000_forReview")
 VAL_TXT    = str(DATA_ROOT / "ImageSets/Main/val.txt")
-DDTI_ROOT  = Path("data_raw/ddti_unique_dataset")
 
 for d in ["predictions", "figures"]:
     (EXP_DIR / d).mkdir(parents=True, exist_ok=True)
@@ -116,6 +115,28 @@ def _make_val_transform(scale: float = 1.0):
         A.Normalize(mean=IMAGENET_MEAN, std=IMAGENET_STD),
         ToTensorV2(),
     ])
+
+# ── Divesh Dataset ────────────────────────────────────────────────────────────
+import glob
+class DiveshDataset(torch.utils.data.Dataset):
+    def __init__(self, data_root, transform=None):
+        self.transform = transform
+        self.samples = []
+        td = os.path.join(data_root, "Thyroid Data")
+        for label, sub in [(0, "0"), (1, "1")]:
+            d = os.path.join(td, sub)
+            if not os.path.exists(d): continue
+            for f in glob.glob(os.path.join(d, "*.*")):
+                if f.lower().endswith((".jpg", ".jpeg", ".png")):
+                    self.samples.append({"img_path": f, "label": label})
+
+    def __len__(self): return len(self.samples)
+
+    def __getitem__(self, idx):
+        s = self.samples[idx]
+        img = np.array(PILImage.open(s["img_path"]).convert("RGB"))
+        if self.transform: img = self.transform(image=img)["image"]
+        return img, torch.tensor(s["label"], dtype=torch.float32)
 
 # ── Inference ─────────────────────────────────────────────────────────────────
 def _infer_logits(model, loader, device):
@@ -224,8 +245,11 @@ def main():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Device: {device}")
 
+    import kagglehub
+    divesh_root = kagglehub.dataset_download("diveshzz/thyroid-cancer-classification-ultrasound-dataset")
+
     val_dataset = TN5000Dataset(str(DATA_ROOT), VAL_TXT, transform=None)
-    ext_dataset = DDTIUniqueDataset(str(DDTI_ROOT), transform=None)
+    ext_dataset = DiveshDataset(divesh_root, transform=None)
 
     seed_ext_preds = {s: {scale: None for scale in SCALES} for s in SEEDS}
     seed_val_preds = {s: None for s in SEEDS}
