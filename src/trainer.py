@@ -277,7 +277,7 @@ def train_model(
         history["val_loss"].append(val_metrics["loss"])
         history["val_auc"].append(val_metrics["auc"])
 
-        star = " ★" if early_stopping.counter == 0 or epoch == 1 else ""
+        star = " *" if early_stopping.counter == 0 or epoch == 1 else ""
         print(
             f"[{run_name}] Epoch {epoch:03d}/{max_epochs} | "
             f"Train AUC={train_metrics['auc']:.4f}  Loss={train_metrics['loss']:.4f} | "
