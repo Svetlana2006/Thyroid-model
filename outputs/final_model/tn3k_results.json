@@ -1,0 +1,7 @@
+{
+  "dataset": "haifan-gong/TN3K",
+  "samples": 1228,
+  "ensemble_auc": 0.30758947044530977,
+  "ci_lower": 0.2745931725207284,
+  "ci_upper": 0.3431127694859038
+}
