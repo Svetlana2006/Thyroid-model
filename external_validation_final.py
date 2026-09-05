@@ -218,7 +218,7 @@ def main():
             continue
 
         model = MultiLevelSwin(dropout=0.0).to(device)
-        ckpt = torch.load(ckpt_path, map_location=device, weights_only=True)
+        ckpt = torch.load(ckpt_path, map_location=device, weights_only=False)
         model.load_state_dict(ckpt["model_state_dict"])
         
         logits, labels = evaluate_seed(model, loader, device)
