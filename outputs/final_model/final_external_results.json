@@ -1,0 +1,7 @@
+{
+  "dataset": "final_external",
+  "samples": 8508,
+  "ensemble_auc": 0.5361947913776854,
+  "ci_lower": 0.5240205174560689,
+  "ci_upper": 0.5491100644733484
+}
