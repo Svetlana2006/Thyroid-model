@@ -21,3 +21,9 @@ Thumbs.db
 
 # ── Jupyter ───────────────────────────────────────────────────────────────────
 .ipynb_checkpoints/
+
+# Final External Data
+27021604.zip
+batch1_image.rar
+batch2_image.rar
+check_overlap.py
