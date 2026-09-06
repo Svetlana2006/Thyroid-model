@@ -113,12 +113,15 @@ class DiveshDataset(Dataset):
         if os.path.exists(class_0_dir):
             for img_file in glob.glob(os.path.join(class_0_dir, "*.*")):
                 if img_file.lower().endswith(('.jpg', '.jpeg', '.png')):
-                    self.samples.append({"id": os.path.basename(img_file), "img_path": img_file, "label": 0})
+                    self.samples.append({"img_path": img_file, "label": 0})
         class_1_dir = os.path.join(dataset_dir, "1")
         if os.path.exists(class_1_dir):
             for img_file in glob.glob(os.path.join(class_1_dir, "*.*")):
                 if img_file.lower().endswith(('.jpg', '.jpeg', '.png')):
-                    self.samples.append({"id": os.path.basename(img_file), "img_path": img_file, "label": 1})
+                    self.samples.append({"img_path": img_file, "label": 1})
+                    
+        for i, s in enumerate(self.samples):
+            s["id"] = f"{i:04d}_{os.path.basename(s['img_path'])}"
 
     def __len__(self): return len(self.samples)
     def __getitem__(self, idx):
