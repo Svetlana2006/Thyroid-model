@@ -1,13 +1,14 @@
 """
-External Validation Script for Divesh Dataset
-Evaluates the frozen 5-seed MultiLevelSwin ensemble on the diveshzz dataset.
+Internal Test Evaluation Script (TN5000)
+Evaluates the frozen 5-seed MultiLevelSwin ensemble on the TN5000 internal test set.
 """
 
 import argparse
 import csv
-import glob
 import os
 import json
+import xml.etree.ElementTree as ET
+from collections import defaultdict
 from pathlib import Path
 
 import cv2
@@ -25,7 +26,6 @@ from sklearn.metrics import (
     roc_curve, precision_recall_curve
 )
 from torch.utils.data import DataLoader, Dataset
-import kagglehub
 
 try:
     from tqdm import tqdm
@@ -39,9 +39,8 @@ from src.transforms import IMAGENET_MEAN, IMAGENET_STD
 PROJ_DIM = 128
 FUSION_DIM = 256
 THRESHOLD = 0.5912
-DIVESH_EXPECTED_AUC = 0.8244150886
 
-OUTPUT_DIR = Path("outputs/final_model/evaluation/diveshzz")
+OUTPUT_DIR = Path("outputs/final_model/evaluation/tn5000")
 FIG_DIR = OUTPUT_DIR / "figures"
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 FIG_DIR.mkdir(parents=True, exist_ok=True)
@@ -105,20 +104,25 @@ def make_val_transform(scale: float = 1.0):
 TTA_SCALES = [0.85, 1.00, 1.15]
 TTA_TRANSFORMS = [make_val_transform(s) for s in TTA_SCALES]
 
-class DiveshDataset(Dataset):
+class TN5000TestDataset(Dataset):
     def __init__(self, data_root: str):
+        self.data_root = Path(data_root)
+        self.img_dir = self.data_root / "JPEGImages"
+        self.ann_dir = self.data_root / "Annotations"
+        split_file = self.data_root / "ImageSets" / "Main" / "test.txt"
+        
+        with open(split_file, "r") as f:
+            self.ids = [line.strip() for line in f if line.strip()]
+
         self.samples = []
-        dataset_dir = os.path.join(data_root, "Thyroid Data")
-        class_0_dir = os.path.join(dataset_dir, "0")
-        if os.path.exists(class_0_dir):
-            for img_file in glob.glob(os.path.join(class_0_dir, "*.*")):
-                if img_file.lower().endswith(('.jpg', '.jpeg', '.png')):
-                    self.samples.append({"id": os.path.basename(img_file), "img_path": img_file, "label": 0})
-        class_1_dir = os.path.join(dataset_dir, "1")
-        if os.path.exists(class_1_dir):
-            for img_file in glob.glob(os.path.join(class_1_dir, "*.*")):
-                if img_file.lower().endswith(('.jpg', '.jpeg', '.png')):
-                    self.samples.append({"id": os.path.basename(img_file), "img_path": img_file, "label": 1})
+        for img_id in self.ids:
+            ann_path = self.ann_dir / f"{img_id}.xml"
+            img_path = self.img_dir / f"{img_id}.jpg"
+            tree = ET.parse(ann_path)
+            root = tree.getroot()
+            obj = root.find("object")
+            label = int(obj.find("name").text)
+            self.samples.append({"id": img_path.name, "img_path": str(img_path), "label": label})
 
     def __len__(self): return len(self.samples)
     def __getitem__(self, idx):
@@ -129,13 +133,11 @@ class DiveshDataset(Dataset):
         return tensors, s["label"], s["id"]
 
 @torch.no_grad()
-def get_predictions(model, loader, device, seed_idx):
-    from collections import defaultdict
+def get_predictions(model, loader, device):
     model.eval()
     preds = defaultdict(lambda: {"label": None, "logits": [[] for _ in TTA_SCALES]})
     
-    desc_str = f"Evaluating Seed {seed_idx}"
-    iterator = tqdm(loader, desc=desc_str, leave=False) if HAS_TQDM else loader
+    iterator = tqdm(loader, desc="Inference", leave=False) if HAS_TQDM else loader
     for tensors, labels, ids in iterator:
         tensors = tensors.to(device)
         B, num_tta, C, H, W = tensors.shape
@@ -210,15 +212,6 @@ def evaluate(preds_dict):
         "AUROC_1.00x": roc_auc_score(y_true, scale_ensemble_logits[1]),
         "AUROC_1.15x": roc_auc_score(y_true, scale_ensemble_logits[2]),
     }
-    
-    seed_aurocs = [roc_auc_score(y_true, s_logits) for s_logits in seed_tta_logits]
-    metrics["Seed_AUROCs"] = seed_aurocs
-    metrics["Seed_Mean"] = np.mean(seed_aurocs)
-    metrics["Seed_SD"] = np.std(seed_aurocs)
-    metrics["Seed_Min"] = np.min(seed_aurocs)
-    metrics["Seed_Max"] = np.max(seed_aurocs)
-    metrics["Seed_Median"] = np.median(seed_aurocs)
-
     return metrics, y_true, y_pred_prob
 
 def generate_outputs(preds_dict, metrics, y_true, y_pred_prob):
@@ -227,37 +220,37 @@ def generate_outputs(preds_dict, metrics, y_true, y_pred_prob):
     plt.figure()
     plt.plot(fpr, tpr, label=f"AUROC = {metrics['AUROC']:.4f}")
     plt.plot([0, 1], [0, 1], 'k--')
-    plt.title(f"Diveshzz External ROC Curve")
+    plt.title(f"Internal TN5000 ROC Curve")
     plt.xlabel("False Positive Rate")
     plt.ylabel("True Positive Rate")
     plt.legend()
-    plt.savefig(FIG_DIR / "Diveshzz_ROC.png", bbox_inches='tight')
+    plt.savefig(FIG_DIR / "TN5000_ROC.png", bbox_inches='tight')
     plt.close()
     
     # PR
     p, r, _ = precision_recall_curve(y_true, y_pred_prob)
     plt.figure()
     plt.plot(r, p, label=f"PR-AUC = {metrics['PR-AUC']:.4f}")
-    plt.title(f"Diveshzz External PR Curve")
+    plt.title(f"Internal TN5000 PR Curve")
     plt.xlabel("Recall")
     plt.ylabel("Precision")
     plt.legend()
-    plt.savefig(FIG_DIR / "Diveshzz_PR.png", bbox_inches='tight')
+    plt.savefig(FIG_DIR / "TN5000_PR.png", bbox_inches='tight')
     plt.close()
 
     # Confusion Matrix
     cm = np.array([[metrics["TN"], metrics["FP"]], [metrics["FN"], metrics["TP"]]])
     plt.figure(figsize=(5,4))
     sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', xticklabels=['Benign', 'Malignant'], yticklabels=['Benign', 'Malignant'])
-    plt.title("Diveshzz External Confusion Matrix")
+    plt.title("Internal TN5000 Confusion Matrix")
     plt.ylabel('True')
     plt.xlabel('Predicted')
-    plt.savefig(FIG_DIR / "Diveshzz_CM.png", bbox_inches='tight')
+    plt.savefig(FIG_DIR / "TN5000_CM.png", bbox_inches='tight')
     plt.close()
 
     # CSV Predictions
     ids = sorted(list(preds_dict.keys()))
-    with open(OUTPUT_DIR / "diveshzz_predictions.csv", "w", newline="") as f:
+    with open(OUTPUT_DIR / "internal_tn5000_predictions.csv", "w", newline="") as f:
         writer = csv.writer(f)
         header = ["id", "true_label"]
         for s in range(5):
@@ -288,7 +281,7 @@ def generate_outputs(preds_dict, metrics, y_true, y_pred_prob):
     fps = sorted([(i, p) for i, p in preds_dict.items() if p["label"]==0 and p["pred_class"]==1], key=lambda x: x[1]["prob"], reverse=True)
     fns = sorted([(i, p) for i, p in preds_dict.items() if p["label"]==1 and p["pred_class"]==0], key=lambda x: x[1]["prob"])
     
-    with open(OUTPUT_DIR / "diveshzz_error_analysis.txt", "w") as f:
+    with open(OUTPUT_DIR / "tn5000_error_analysis.txt", "w") as f:
         f.write(f"Total False Positives: {len(fps)}\nTotal False Negatives: {len(fns)}\n\n")
         f.write("--- Top False Positives ---\n")
         for i, p in fps[:20]: f.write(f"ID: {i} | Prob: {p['prob']:.4f} | Max TTA Disagreement: {p['max_disagreement']:.4f}\n")
@@ -296,35 +289,29 @@ def generate_outputs(preds_dict, metrics, y_true, y_pred_prob):
         for i, p in fns[:20]: f.write(f"ID: {i} | Prob: {p['prob']:.4f} | Max TTA Disagreement: {p['max_disagreement']:.4f}\n")
 
     # Evaluation Report
-    report = "# Diveshzz External Dataset Evaluation\n\n"
+    report = "# Internal TN5000 Test Set Evaluation\n\n"
     for k, v in metrics.items():
         if isinstance(v, float): report += f"**{k}:** {v:.4f}\n"
-        elif isinstance(v, list): report += f"**{k}:** {[round(x, 4) for x in v]}\n"
         else: report += f"**{k}:** {v}\n"
-        
-    report += f"\n### Comparison with Established Result\nEstablished AUROC: {DIVESH_EXPECTED_AUC:.4f}\nRerun AUROC: {metrics['AUROC']:.4f}\n"
-    with open(OUTPUT_DIR / "diveshzz_report.md", "w") as f: f.write(report)
+    with open(OUTPUT_DIR / "tn5000_report.md", "w") as f: f.write(report)
 
 def main():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    divesh_path = kagglehub.dataset_download('diveshzz/thyroid-cancer-classification-ultrasound-dataset')
-    ds = DiveshDataset(divesh_path)
+    ds = TN5000TestDataset("data_raw/TN5000_forReview")
     loader = DataLoader(ds, batch_size=8, num_workers=4 if torch.cuda.is_available() else 0)
-    
-    from collections import defaultdict
     all_preds = defaultdict(lambda: {"label": None, "seeds": []})
     
     for seed in range(5):
         ckpt_path = Path("outputs/final_model") / f"seed{seed}" / "best.pt"
         model = MultiLevelSwin(dropout=0.0).to(device)
         model.load_state_dict(torch.load(ckpt_path, map_location=device, weights_only=False)["model_state_dict"])
-        preds = get_predictions(model, loader, device, seed_idx=seed)
+        preds = get_predictions(model, loader, device)
         for obj_id, data in preds.items():
             all_preds[obj_id]["label"] = data["label"]
             all_preds[obj_id]["seeds"].append(data["scale_logits"])
             
     metrics, y_true, y_pred_prob = evaluate(all_preds)
     generate_outputs(all_preds, metrics, y_true, y_pred_prob)
-    print(f"Diveshzz evaluation complete. Artifacts saved to {OUTPUT_DIR}")
+    print(f"Internal TN5000 evaluation complete. Artifacts saved to {OUTPUT_DIR}")
 
 if __name__ == "__main__": main()
