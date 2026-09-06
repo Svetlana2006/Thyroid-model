@@ -1,0 +1,46 @@
+Total False Positives: 36
+Total False Negatives: 60
+
+--- Top False Positives ---
+ID: 004640.jpg | Prob: 0.9425 | Max TTA Disagreement: 0.2660
+ID: 000048.jpg | Prob: 0.9424 | Max TTA Disagreement: 0.2507
+ID: 000371.jpg | Prob: 0.9410 | Max TTA Disagreement: 0.1956
+ID: 003474.jpg | Prob: 0.9344 | Max TTA Disagreement: 0.5463
+ID: 000046.jpg | Prob: 0.9319 | Max TTA Disagreement: 0.3713
+ID: 000623.jpg | Prob: 0.9286 | Max TTA Disagreement: 0.7892
+ID: 000224.jpg | Prob: 0.9272 | Max TTA Disagreement: 0.4271
+ID: 000083.jpg | Prob: 0.9235 | Max TTA Disagreement: 0.6681
+ID: 002362.jpg | Prob: 0.9104 | Max TTA Disagreement: 0.3591
+ID: 000225.jpg | Prob: 0.9102 | Max TTA Disagreement: 0.5451
+ID: 000339.jpg | Prob: 0.9078 | Max TTA Disagreement: 0.5470
+ID: 002882.jpg | Prob: 0.8876 | Max TTA Disagreement: 0.3804
+ID: 002451.jpg | Prob: 0.8854 | Max TTA Disagreement: 0.3218
+ID: 004115.jpg | Prob: 0.8831 | Max TTA Disagreement: 0.7585
+ID: 000637.jpg | Prob: 0.8770 | Max TTA Disagreement: 0.4309
+ID: 000318.jpg | Prob: 0.8675 | Max TTA Disagreement: 0.8611
+ID: 004628.jpg | Prob: 0.8668 | Max TTA Disagreement: 0.6657
+ID: 000244.jpg | Prob: 0.8624 | Max TTA Disagreement: 1.6902
+ID: 000405.jpg | Prob: 0.8517 | Max TTA Disagreement: 0.7423
+ID: 004631.jpg | Prob: 0.8377 | Max TTA Disagreement: 0.8220
+
+--- Top False Negatives ---
+ID: 001300.jpg | Prob: 0.0144 | Max TTA Disagreement: 0.1020
+ID: 002660.jpg | Prob: 0.0264 | Max TTA Disagreement: 0.0254
+ID: 003392.jpg | Prob: 0.0416 | Max TTA Disagreement: 0.8188
+ID: 000735.jpg | Prob: 0.0735 | Max TTA Disagreement: 1.0988
+ID: 002110.jpg | Prob: 0.1100 | Max TTA Disagreement: 2.1861
+ID: 001408.jpg | Prob: 0.1154 | Max TTA Disagreement: 0.2684
+ID: 003617.jpg | Prob: 0.1174 | Max TTA Disagreement: 2.0724
+ID: 001307.jpg | Prob: 0.1195 | Max TTA Disagreement: 1.1623
+ID: 003787.jpg | Prob: 0.1215 | Max TTA Disagreement: 0.4564
+ID: 000955.jpg | Prob: 0.1400 | Max TTA Disagreement: 0.9154
+ID: 002759.jpg | Prob: 0.1405 | Max TTA Disagreement: 0.9810
+ID: 002085.jpg | Prob: 0.1472 | Max TTA Disagreement: 1.1251
+ID: 001058.jpg | Prob: 0.1604 | Max TTA Disagreement: 4.5316
+ID: 001966.jpg | Prob: 0.1745 | Max TTA Disagreement: 1.7673
+ID: 003758.jpg | Prob: 0.1848 | Max TTA Disagreement: 1.6380
+ID: 001094.jpg | Prob: 0.1951 | Max TTA Disagreement: 2.6845
+ID: 001387.jpg | Prob: 0.2126 | Max TTA Disagreement: 0.3083
+ID: 002212.jpg | Prob: 0.2209 | Max TTA Disagreement: 3.5322
+ID: 002326.jpg | Prob: 0.2233 | Max TTA Disagreement: 0.9280
+ID: 000483.jpg | Prob: 0.2388 | Max TTA Disagreement: 0.2818
