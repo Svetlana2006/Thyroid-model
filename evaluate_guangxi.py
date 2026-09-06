@@ -112,12 +112,14 @@ class GuangxiDataset(Dataset):
         malignant_dir = os.path.join(data_root, "Ultrasound images of papillary thyroid carcinoma")
         
         if os.path.exists(benign_dir):
-            for img_file in glob.glob(os.path.join(benign_dir, "*.jpg")):
-                self.samples.append({"img_path": img_file, "label": 0})
+            for img_file in glob.glob(os.path.join(benign_dir, "*.*")):
+                if img_file.lower().endswith(('.jpg', '.jpeg', '.png', '.bmp')):
+                    self.samples.append({"img_path": img_file, "label": 0})
                 
         if os.path.exists(malignant_dir):
-            for img_file in glob.glob(os.path.join(malignant_dir, "*.jpg")):
-                self.samples.append({"img_path": img_file, "label": 1})
+            for img_file in glob.glob(os.path.join(malignant_dir, "*.*")):
+                if img_file.lower().endswith(('.jpg', '.jpeg', '.png', '.bmp')):
+                    self.samples.append({"img_path": img_file, "label": 1})
                 
         # Generate unique IDs to prevent any dictionary collisions (just like the Diveshzz fix)
         for i, s in enumerate(self.samples):
