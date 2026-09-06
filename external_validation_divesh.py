@@ -319,12 +319,29 @@ def main():
         model = MultiLevelSwin(dropout=0.0).to(device)
         model.load_state_dict(torch.load(ckpt_path, map_location=device, weights_only=False)["model_state_dict"])
         preds = get_predictions(model, loader, device, seed_idx=seed)
+        
+        # Quick per-seed AUROC calculation for console output
+        seed_y_true = []
+        seed_y_scores = []
         for obj_id, data in preds.items():
             all_preds[obj_id]["label"] = data["label"]
             all_preds[obj_id]["seeds"].append(data["scale_logits"])
+            seed_y_true.append(data["label"])
+            seed_y_scores.append(np.mean(data["scale_logits"]))
+            
+        print(f"Seed {seed} | TTA AUROC: {roc_auc_score(seed_y_true, seed_y_scores):.4f}")
             
     metrics, y_true, y_pred_prob = evaluate(all_preds)
     generate_outputs(all_preds, metrics, y_true, y_pred_prob)
+    
+    print("\n" + "="*50)
+    print("DIVESHZZ EXTERNAL VALIDATION RESULTS")
+    print("="*50)
+    print(f"Ensemble TTA AUROC : {metrics['AUROC']:.4f}")
+    print(f"95% Confidence Int : {metrics['95% CI']}")
+    print(f"PR-AUC             : {metrics['PR-AUC']:.4f}")
+    print(f"Reference AUROC    : {DIVESH_EXPECTED_AUC:.4f}")
+    print("="*50)
     print(f"Diveshzz evaluation complete. Artifacts saved to {OUTPUT_DIR}")
 
 if __name__ == "__main__": main()
