@@ -1,0 +1,7 @@
+{
+  "dataset": "tingzen/thyroid-for-pretraining",
+  "samples": 7288,
+  "ensemble_auc": 0.8268568354050279,
+  "ci_lower": 0.8169406749381809,
+  "ci_upper": 0.8356870327159859
+}
