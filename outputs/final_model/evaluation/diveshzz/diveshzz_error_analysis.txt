@@ -1,46 +1,46 @@
-Total False Positives: 365
-Total False Negatives: 458
+Total False Positives: 407
+Total False Negatives: 325
 
 --- Top False Positives ---
-ID: 2495.jpg | Prob: 0.9599 | Max TTA Disagreement: 0.1811
-ID: 2503.jpg | Prob: 0.9585 | Max TTA Disagreement: 0.3700
-ID: 1940.jpg | Prob: 0.9566 | Max TTA Disagreement: 0.2223
-ID: 0029.jpg | Prob: 0.9535 | Max TTA Disagreement: 0.2357
-ID: 1241.jpg | Prob: 0.9535 | Max TTA Disagreement: 0.2335
-ID: 1123.jpg | Prob: 0.9532 | Max TTA Disagreement: 0.3728
-ID: 0371.jpg | Prob: 0.9503 | Max TTA Disagreement: 0.0438
-ID: 2455.jpg | Prob: 0.9429 | Max TTA Disagreement: 0.4652
-ID: 2390.jpg | Prob: 0.9425 | Max TTA Disagreement: 0.3835
-ID: 0102.jpg | Prob: 0.9413 | Max TTA Disagreement: 0.1751
-ID: 0337.jpg | Prob: 0.9410 | Max TTA Disagreement: 0.2580
-ID: 2453.jpg | Prob: 0.9409 | Max TTA Disagreement: 0.1900
-ID: 2545.jpg | Prob: 0.9406 | Max TTA Disagreement: 0.1971
-ID: 1791.jpg | Prob: 0.9398 | Max TTA Disagreement: 0.1191
-ID: 1109.jpg | Prob: 0.9391 | Max TTA Disagreement: 0.2812
-ID: 2402.jpg | Prob: 0.9362 | Max TTA Disagreement: 0.1380
-ID: 1385.jpg | Prob: 0.9360 | Max TTA Disagreement: 0.1875
-ID: 2457.jpg | Prob: 0.9354 | Max TTA Disagreement: 0.3445
-ID: 1700.jpg | Prob: 0.9338 | Max TTA Disagreement: 0.9606
-ID: 2300.jpg | Prob: 0.9338 | Max TTA Disagreement: 0.2702
+ID: 0222_2495.jpg | Prob: 0.9599 | Max TTA Disagreement: 0.1811
+ID: 0227_2503.jpg | Prob: 0.9585 | Max TTA Disagreement: 0.3700
+ID: 0039_1940.jpg | Prob: 0.9566 | Max TTA Disagreement: 0.2223
+ID: 0782_0029.jpg | Prob: 0.9535 | Max TTA Disagreement: 0.2357
+ID: 0288_1241.jpg | Prob: 0.9535 | Max TTA Disagreement: 0.2335
+ID: 0330_1123.jpg | Prob: 0.9532 | Max TTA Disagreement: 0.3728
+ID: 1872_0371.jpg | Prob: 0.9503 | Max TTA Disagreement: 0.0438
+ID: 0793_0409.jpg | Prob: 0.9453 | Max TTA Disagreement: 0.1131
+ID: 1519_2455.jpg | Prob: 0.9429 | Max TTA Disagreement: 0.4652
+ID: 1817_2390.jpg | Prob: 0.9425 | Max TTA Disagreement: 0.3835
+ID: 0705_0102.jpg | Prob: 0.9413 | Max TTA Disagreement: 0.1751
+ID: 0064_0337.jpg | Prob: 0.9410 | Max TTA Disagreement: 0.2580
+ID: 1388_2453.jpg | Prob: 0.9409 | Max TTA Disagreement: 0.1900
+ID: 1797_2545.jpg | Prob: 0.9406 | Max TTA Disagreement: 0.1971
+ID: 1384_1791.jpg | Prob: 0.9398 | Max TTA Disagreement: 0.1191
+ID: 0689_1109.jpg | Prob: 0.9391 | Max TTA Disagreement: 0.2812
+ID: 1556_2402.jpg | Prob: 0.9362 | Max TTA Disagreement: 0.1380
+ID: 0019_1385.jpg | Prob: 0.9360 | Max TTA Disagreement: 0.1875
+ID: 0181_2457.jpg | Prob: 0.9354 | Max TTA Disagreement: 0.3445
+ID: 0004_1700.jpg | Prob: 0.9338 | Max TTA Disagreement: 0.9606
 
 --- Top False Negatives ---
-ID: 0502.jpg | Prob: 0.0029 | Max TTA Disagreement: 1.4054
-ID: 0453.jpg | Prob: 0.0034 | Max TTA Disagreement: 1.4253
-ID: 0613.jpg | Prob: 0.0040 | Max TTA Disagreement: 0.2305
-ID: 0802.jpg | Prob: 0.0044 | Max TTA Disagreement: 1.5933
-ID: 0402.jpg | Prob: 0.0076 | Max TTA Disagreement: 0.5850
-ID: 0507.jpg | Prob: 0.0089 | Max TTA Disagreement: 1.1009
-ID: 0717.jpg | Prob: 0.0091 | Max TTA Disagreement: 0.5233
-ID: 0433.jpg | Prob: 0.0095 | Max TTA Disagreement: 1.0922
-ID: 0715.jpg | Prob: 0.0095 | Max TTA Disagreement: 2.9891
-ID: 0403.jpg | Prob: 0.0097 | Max TTA Disagreement: 0.3211
-ID: 0445.jpg | Prob: 0.0097 | Max TTA Disagreement: 0.0988
-ID: 0548.jpg | Prob: 0.0101 | Max TTA Disagreement: 0.4890
-ID: 0393.jpg | Prob: 0.0102 | Max TTA Disagreement: 3.0586
-ID: 2254.jpg | Prob: 0.0126 | Max TTA Disagreement: 0.1494
-ID: 0749.jpg | Prob: 0.0128 | Max TTA Disagreement: 1.3896
-ID: 0829.jpg | Prob: 0.0130 | Max TTA Disagreement: 0.5561
-ID: 1493.jpg | Prob: 0.0132 | Max TTA Disagreement: 0.8302
-ID: 0426.jpg | Prob: 0.0134 | Max TTA Disagreement: 0.2565
-ID: 0457.jpg | Prob: 0.0142 | Max TTA Disagreement: 0.3943
-ID: 0509.jpg | Prob: 0.0149 | Max TTA Disagreement: 0.2100
+ID: 2369_0802.jpg | Prob: 0.0044 | Max TTA Disagreement: 1.5933
+ID: 2807_0571.jpg | Prob: 0.0054 | Max TTA Disagreement: 0.4898
+ID: 2775_0717.jpg | Prob: 0.0091 | Max TTA Disagreement: 0.5233
+ID: 2898_0715.jpg | Prob: 0.0095 | Max TTA Disagreement: 2.9891
+ID: 2285_0460.jpg | Prob: 0.0118 | Max TTA Disagreement: 0.6607
+ID: 2929_2254.jpg | Prob: 0.0126 | Max TTA Disagreement: 0.1494
+ID: 2984_0749.jpg | Prob: 0.0128 | Max TTA Disagreement: 1.3896
+ID: 2360_0829.jpg | Prob: 0.0130 | Max TTA Disagreement: 0.5561
+ID: 2388_1493.jpg | Prob: 0.0132 | Max TTA Disagreement: 0.8302
+ID: 2353_1489.jpg | Prob: 0.0153 | Max TTA Disagreement: 0.5289
+ID: 3105_0492.jpg | Prob: 0.0155 | Max TTA Disagreement: 0.1878
+ID: 2530_2731.jpg | Prob: 0.0162 | Max TTA Disagreement: 0.2781
+ID: 2020_2091.jpg | Prob: 0.0168 | Max TTA Disagreement: 0.6057
+ID: 2543_2031.jpg | Prob: 0.0169 | Max TTA Disagreement: 0.2857
+ID: 2052_2840.jpg | Prob: 0.0174 | Max TTA Disagreement: 0.1805
+ID: 2422_0913.jpg | Prob: 0.0182 | Max TTA Disagreement: 0.7807
+ID: 2465_0718.jpg | Prob: 0.0188 | Max TTA Disagreement: 0.4522
+ID: 1995_0404.jpg | Prob: 0.0202 | Max TTA Disagreement: 0.5194
+ID: 2380_0785.jpg | Prob: 0.0211 | Max TTA Disagreement: 0.4691
+ID: 2481_0711.jpg | Prob: 0.0220 | Max TTA Disagreement: 1.5040
