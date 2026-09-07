@@ -41,41 +41,43 @@ TTA_SCALES_DICT = {
 
 def get_transform(ar_type: str, scale: float):
     if ar_type == "A1":
-        # Longest side 256 -> center crop 224 (current baseline)
+        # Longest side 256 -> proportional resize -> pad only enough for 224x224 crop -> center crop 224
         max_size = round(256 * scale)
         return A.Compose([
             A.LongestMaxSize(max_size=max_size),
-            A.PadIfNeeded(min_height=max(max_size, 224), min_width=max(max_size, 224), border_mode=0),
+            A.PadIfNeeded(min_height=224, min_width=224, border_mode=0),
             A.CenterCrop(224, 224),
             A.Normalize(mean=IMAGENET_MEAN, std=IMAGENET_STD),
             ToTensorV2(),
         ])
     elif ar_type == "A2":
-        # Longest side 224 -> pad to 224
+        # Longest side 224 -> proportional resize -> pad to 224
         max_size = round(224 * scale)
         return A.Compose([
             A.LongestMaxSize(max_size=max_size),
-            A.PadIfNeeded(min_height=max(max_size, 224), min_width=max(max_size, 224), border_mode=0),
+            A.PadIfNeeded(min_height=224, min_width=224, border_mode=0),
             A.CenterCrop(224, 224),
             A.Normalize(mean=IMAGENET_MEAN, std=IMAGENET_STD),
             ToTensorV2(),
         ])
     elif ar_type == "A3":
-        # Longest side 256 -> pad to 256 -> resize 256->224
+        # Longest side 256 -> proportional resize -> pad to at least 256x256 -> resize 224
         max_size = round(256 * scale)
+        pad_size = max(max_size, 256)
         return A.Compose([
             A.LongestMaxSize(max_size=max_size),
-            A.PadIfNeeded(min_height=max(max_size, 224), min_width=max(max_size, 224), border_mode=0),
+            A.PadIfNeeded(min_height=pad_size, min_width=pad_size, border_mode=0),
             A.Resize(224, 224),
             A.Normalize(mean=IMAGENET_MEAN, std=IMAGENET_STD),
             ToTensorV2(),
         ])
     elif ar_type == "A4":
-        # Longest side 256 -> pad 256 -> center crop 224
+        # Longest side 256 -> proportional resize -> pad to at least 256x256 -> center crop 224
         max_size = round(256 * scale)
+        pad_size = max(max_size, 256)
         return A.Compose([
             A.LongestMaxSize(max_size=max_size),
-            A.PadIfNeeded(min_height=256, min_width=256, border_mode=0),
+            A.PadIfNeeded(min_height=pad_size, min_width=pad_size, border_mode=0),
             A.CenterCrop(224, 224),
             A.Normalize(mean=IMAGENET_MEAN, std=IMAGENET_STD),
             ToTensorV2(),
