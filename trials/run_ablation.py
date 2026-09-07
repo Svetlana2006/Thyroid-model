@@ -13,15 +13,18 @@ from core import (
     calculate_metrics, TTA_SCALES_DICT, THRESHOLD
 )
 
+from sklearn.metrics import roc_auc_score
+
 def expit(x): return 1 / (1 + np.exp(-x))
 
 @torch.no_grad()
-def get_predictions(model, loader, device):
+def get_predictions(model, loader, device, seed_idx):
     model.eval()
     from collections import defaultdict
     preds = defaultdict(lambda: {"label": None, "logits": []}) # logits: [num_tta] per image
     
-    for tensors, labels, ids in tqdm(loader, leave=False):
+    desc_str = f"Evaluating Seed {seed_idx}"
+    for tensors, labels, ids in tqdm(loader, desc=desc_str, leave=False):
         tensors = tensors.to(device)
         B, num_tta, C, H, W = tensors.shape
         tensors = tensors.view(B * num_tta, C, H, W)
@@ -55,11 +58,17 @@ def evaluate_dataset(dataset, device):
         ckpt_path = os.path.join("outputs", "final_model", f"seed{seed}", "best.pt")
         model = MultiLevelSwin(dropout=0.0).to(device)
         model.load_state_dict(torch.load(ckpt_path, map_location=device, weights_only=False)["model_state_dict"])
-        preds = get_predictions(model, loader, device)
+        preds = get_predictions(model, loader, device, seed)
         
+        seed_y_true = []
+        seed_y_scores = []
         for obj_id, data in preds.items():
             all_preds[obj_id]["label"] = data["label"]
             all_preds[obj_id]["seeds"].append(data["scale_logits"]) # list of scale logits for this seed
+            seed_y_true.append(data["label"])
+            seed_y_scores.append(np.mean(data["scale_logits"]))
+            
+        print(f"  Seed {seed} | TTA AUROC: {roc_auc_score(seed_y_true, seed_y_scores):.4f}")
             
     # Now aggregate over seeds and scales
     ids = sorted(list(all_preds.keys()))
