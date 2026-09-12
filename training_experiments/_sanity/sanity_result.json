@@ -1,0 +1,27 @@
+{
+  "config": "A1S4V2",
+  "ar": "A1",
+  "ar_definition": "Longest side 256; pad only as needed for a 224 crop; crop 224.",
+  "tta_scales": [
+    0.6,
+    0.75,
+    1.0,
+    1.15,
+    1.4
+  ],
+  "tta_views": 5,
+  "seed": 0,
+  "best_epoch": 1,
+  "best_val_auc": 0.5545454545454546,
+  "training_time_sec": 7.117761850357056,
+  "training_samples": 32,
+  "validation_samples": 32,
+  "checkpoint": "C:\\Users\\Svetlana\\Thyroid-model\\training_experiments\\_sanity\\A1S4V2\\seed0\\best.pt",
+  "model": "MultiLevelSwin / Swin-Tiny",
+  "parameter_count": 27792891,
+  "torch": "2.13.0+cpu",
+  "cuda_available": false,
+  "device": "cpu",
+  "platform": "Windows-11-10.0.26200-SP0",
+  "sanity": true
+}

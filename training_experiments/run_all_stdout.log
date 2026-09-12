@@ -1,0 +1,4 @@
+
+  Mode: CPU (float32)
+  Max epochs=25 | patience=10 | batch=16
+
