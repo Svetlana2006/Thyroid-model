@@ -163,8 +163,8 @@ def pretrain_samples(root: str):
 
 
 @torch.no_grad()
-def seed_logits(checkpoint: Path, dataset: Dataset, device: torch.device, description: str):
-    loader = DataLoader(dataset, batch_size=8, shuffle=False,
+def seed_logits(checkpoint: Path, dataset: Dataset, device: torch.device, description: str, batch_size: int = 4):
+    loader = DataLoader(dataset, batch_size=batch_size, shuffle=False,
                         num_workers=NUM_WORKERS if device.type == "cuda" else 0)
     model = MultiLevelSwin(dropout=0.0).to(device)
     state = torch.load(checkpoint, map_location=device, weights_only=False)
@@ -316,7 +316,7 @@ def append_master(row):
         writer.writerow(row)
 
 
-def run_config(name, base_dir=OUT):
+def run_config(name, base_dir=OUT, evaluate_after_training=False):
     ar, scales = CONFIGS[name]
     config_dir = base_dir / name
     metadata = []
@@ -333,11 +333,24 @@ def run_config(name, base_dir=OUT):
                     f"{seed_dir} is incomplete. It will not be overwritten. Move it to a dated "
                     "failed_attempt directory before rerunning this configuration.")
             metadata.append(run_seed(name, ar, scales, seed, base_dir))
-        update_status(base_dir, name, state="evaluating", active_seed=None,
+        update_status(base_dir, name, state="trained", active_seed=None,
                       completed_seeds=list(SEEDS), tta_scales=scales)
     except Exception as exc:
         update_status(base_dir, name, state="failed", error=f"{type(exc).__name__}: {exc}")
         raise
+    training_summary = {"config": name, "ar": ar, "ar_definition": ar_definition(ar),
+                        "tta_scales": scales, "tta_views": len(scales), "seeds": metadata,
+                        "total_training_time_sec": sum(x["training_time_sec"] for x in metadata),
+                        "timestamp": datetime.now(timezone.utc).isoformat()}
+    write_json(config_dir / "training_summary.json", training_summary)
+    if not evaluate_after_training:
+        update_status(base_dir, name, state="trained_pending_evaluation", active_seed=None,
+                      completed_seeds=list(SEEDS), training_summary=str((config_dir / "training_summary.json").resolve()))
+        print(f"[TRAINING COMPLETE] {name}. Run evaluate_stage2.py in a fresh GPU session.", flush=True)
+        return training_summary
+
+    update_status(base_dir, name, state="evaluating", active_seed=None,
+                  completed_seeds=list(SEEDS), tta_scales=scales)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     result, seed_internal_auc, inference_time = evaluate_ensemble(config_dir, ar, scales, device)
     summary = {"config": name, "ar": ar, "ar_definition": ar_definition(ar), "tta_scales": scales,
@@ -370,6 +383,8 @@ def main():
     parser.add_argument("--sanity", action="store_true", help="One epoch, 32 training/validation samples; no evaluation datasets.")
     parser.add_argument("--config", choices=CONFIGS, help="Run exactly one full selected configuration.")
     parser.add_argument("--run-all", action="store_true", help="Run the 10 configurations in protocol order.")
+    parser.add_argument("--evaluate-after-training", action="store_true",
+                        help="Also evaluate immediately. Default: training only; use evaluate_stage2.py separately.")
     parser.add_argument("--status", action="store_true", help="Show persisted configuration/seed status and exit.")
     args = parser.parse_args()
     if args.status:
@@ -390,9 +405,9 @@ def main():
         write_json(OUT / "_sanity" / "sanity_result.json", item)
         print(json.dumps(item, indent=2))
     elif args.config:
-        run_config(args.config)
+        run_config(args.config, evaluate_after_training=args.evaluate_after_training)
     elif args.run_all:
-        for name in CONFIGS: run_config(name)
+        for name in CONFIGS: run_config(name, evaluate_after_training=args.evaluate_after_training)
     else:
         parser.error("choose --sanity, --config, or --run-all")
 
