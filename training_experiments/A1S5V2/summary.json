@@ -1,0 +1,286 @@
+{
+  "config": "A1S5V2",
+  "ar": "A1",
+  "ar_definition": "Longest side 256; pad only as needed for a 224 crop; crop 224.",
+  "tta_scales": [
+    0.6,
+    0.85,
+    1.0,
+    1.25,
+    1.4
+  ],
+  "tta_views": 5,
+  "seeds": [
+    {
+      "config": "A1S5V2",
+      "ar": "A1",
+      "ar_definition": "Longest side 256; pad only as needed for a 224 crop; crop 224.",
+      "tta_scales": [
+        0.6,
+        0.85,
+        1.0,
+        1.25,
+        1.4
+      ],
+      "tta_views": 5,
+      "seed": 0,
+      "best_epoch": 13,
+      "best_val_auc": 0.9451519999999999,
+      "training_time_sec": 644.1110699176788,
+      "training_samples": 5618,
+      "validation_samples": 500,
+      "checkpoint": "C:\\Users\\Dell\\Thyroid-model\\training_experiments\\A1S5V2\\seed0\\best.pt",
+      "model": "MultiLevelSwin / Swin-Tiny",
+      "parameter_count": 27792891,
+      "torch": "2.15.0.dev20260907+cu130",
+      "cuda_available": true,
+      "device": "cuda",
+      "platform": "Windows-11-10.0.26200-SP0",
+      "sanity": false
+    },
+    {
+      "config": "A1S5V2",
+      "ar": "A1",
+      "ar_definition": "Longest side 256; pad only as needed for a 224 crop; crop 224.",
+      "tta_scales": [
+        0.6,
+        0.85,
+        1.0,
+        1.25,
+        1.4
+      ],
+      "tta_views": 5,
+      "seed": 1,
+      "best_epoch": 12,
+      "best_val_auc": 0.946016,
+      "training_time_sec": 616.2075514793396,
+      "training_samples": 5618,
+      "validation_samples": 500,
+      "checkpoint": "C:\\Users\\Dell\\Thyroid-model\\training_experiments\\A1S5V2\\seed1\\best.pt",
+      "model": "MultiLevelSwin / Swin-Tiny",
+      "parameter_count": 27792891,
+      "torch": "2.15.0.dev20260907+cu130",
+      "cuda_available": true,
+      "device": "cuda",
+      "platform": "Windows-11-10.0.26200-SP0",
+      "sanity": false
+    },
+    {
+      "config": "A1S5V2",
+      "ar": "A1",
+      "ar_definition": "Longest side 256; pad only as needed for a 224 crop; crop 224.",
+      "tta_scales": [
+        0.6,
+        0.85,
+        1.0,
+        1.25,
+        1.4
+      ],
+      "tta_views": 5,
+      "seed": 2,
+      "best_epoch": 15,
+      "best_val_auc": 0.946816,
+      "training_time_sec": 702.5844674110413,
+      "training_samples": 5618,
+      "validation_samples": 500,
+      "checkpoint": "C:\\Users\\Dell\\Thyroid-model\\training_experiments\\A1S5V2\\seed2\\best.pt",
+      "model": "MultiLevelSwin / Swin-Tiny",
+      "parameter_count": 27792891,
+      "torch": "2.15.0.dev20260907+cu130",
+      "cuda_available": true,
+      "device": "cuda",
+      "platform": "Windows-11-10.0.26200-SP0",
+      "sanity": false
+    },
+    {
+      "config": "A1S5V2",
+      "ar": "A1",
+      "ar_definition": "Longest side 256; pad only as needed for a 224 crop; crop 224.",
+      "tta_scales": [
+        0.6,
+        0.85,
+        1.0,
+        1.25,
+        1.4
+      ],
+      "tta_views": 5,
+      "seed": 3,
+      "best_epoch": 15,
+      "best_val_auc": 0.9460053333333334,
+      "training_time_sec": 704.9858729839325,
+      "training_samples": 5618,
+      "validation_samples": 500,
+      "checkpoint": "C:\\Users\\Dell\\Thyroid-model\\training_experiments\\A1S5V2\\seed3\\best.pt",
+      "model": "MultiLevelSwin / Swin-Tiny",
+      "parameter_count": 27792891,
+      "torch": "2.15.0.dev20260907+cu130",
+      "cuda_available": true,
+      "device": "cuda",
+      "platform": "Windows-11-10.0.26200-SP0",
+      "sanity": false
+    },
+    {
+      "config": "A1S5V2",
+      "ar": "A1",
+      "ar_definition": "Longest side 256; pad only as needed for a 224 crop; crop 224.",
+      "tta_scales": [
+        0.6,
+        0.85,
+        1.0,
+        1.25,
+        1.4
+      ],
+      "tta_views": 5,
+      "seed": 4,
+      "best_epoch": 16,
+      "best_val_auc": 0.9346773333333334,
+      "training_time_sec": 646.0974910259247,
+      "training_samples": 5618,
+      "validation_samples": 500,
+      "checkpoint": "C:\\Users\\Dell\\Thyroid-model\\training_experiments\\A1S5V2\\seed4\\best.pt",
+      "model": "MultiLevelSwin / Swin-Tiny",
+      "parameter_count": 27792891,
+      "torch": "2.15.0.dev20260907+cu130",
+      "cuda_available": true,
+      "device": "cuda",
+      "platform": "Windows-11-10.0.26200-SP0",
+      "sanity": false
+    }
+  ],
+  "total_training_time_sec": 3313.986452817917,
+  "timestamp": "2026-09-17T16:14:26.512624+00:00",
+  "evaluations": {
+    "Internal": {
+      "config": "A1S5V2",
+      "dataset": "Internal",
+      "ar": "A1",
+      "tta_scales": [
+        0.6,
+        0.85,
+        1.0,
+        1.25,
+        1.4
+      ],
+      "tta_views": 5,
+      "per_seed_auc": [
+        0.9462670172244569,
+        0.9446701824154924,
+        0.9487741495837549,
+        0.9533256373354217,
+        0.9450821047706712
+      ],
+      "ensemble": {
+        "AUC": 0.9545664898621331,
+        "Accuracy": 0.883,
+        "F1": 0.9166072701354241,
+        "Sensitivity": 0.8796169630642955,
+        "Specificity": 0.8921933085501859,
+        "PRAUC": 0.9791890582932151,
+        "TP": 643,
+        "TN": 240,
+        "FP": 29,
+        "FN": 88,
+        "N": 1000,
+        "PatientLevel": false,
+        "PatientCount": null,
+        "PerScaleAUC": [
+          0.9086956300632124,
+          0.9446549260319672,
+          0.9529950823590436,
+          0.9492725247789097,
+          0.9405865570919297
+        ]
+      },
+      "inference_time_sec": 129.73484635353088,
+      "timestamp": "2026-09-17T15:51:07.255826+00:00"
+    },
+    "Diveshzz": {
+      "config": "A1S5V2",
+      "dataset": "Diveshzz",
+      "ar": "A1",
+      "tta_scales": [
+        0.6,
+        0.85,
+        1.0,
+        1.25,
+        1.4
+      ],
+      "tta_views": 5,
+      "per_seed_auc": [
+        0.8082878896336305,
+        0.8015426997245179,
+        0.8130287846250623,
+        0.8249929502613826,
+        0.8105156070367237
+      ],
+      "ensemble": {
+        "AUC": 0.8214446541289777,
+        "Accuracy": 0.7688603531300161,
+        "F1": 0.6974789915966386,
+        "Sensitivity": 0.6859504132231405,
+        "Specificity": 0.821522309711286,
+        "PRAUC": 0.7708715794429061,
+        "TP": 830,
+        "TN": 1565,
+        "FP": 340,
+        "FN": 380,
+        "N": 3115,
+        "PatientLevel": false,
+        "PatientCount": null,
+        "PerScaleAUC": [
+          0.7972720765276241,
+          0.8145628077482051,
+          0.8173540704106201,
+          0.8105255851283052,
+          0.7955558447756014
+        ]
+      },
+      "inference_time_sec": 412.81824254989624,
+      "timestamp": "2026-09-17T15:58:12.085573+00:00"
+    },
+    "ThyroidPretrain": {
+      "config": "A1S5V2",
+      "dataset": "ThyroidPretrain",
+      "ar": "A1",
+      "tta_scales": [
+        0.6,
+        0.85,
+        1.0,
+        1.25,
+        1.4
+      ],
+      "tta_views": 5,
+      "per_seed_auc": [
+        0.7905880362880421,
+        0.8015405289384631,
+        0.8074043718091358,
+        0.8137793310034948,
+        0.8046659444106236
+      ],
+      "ensemble": {
+        "AUC": 0.8163449524068559,
+        "Accuracy": 0.7464324917672887,
+        "F1": 0.7791586998087954,
+        "Sensitivity": 0.8137793310034948,
+        "Specificity": 0.664229128580134,
+        "PRAUC": 0.8274827979817431,
+        "TP": 1630,
+        "TN": 1090,
+        "FP": 551,
+        "FN": 373,
+        "N": 3644,
+        "PatientLevel": true,
+        "PatientCount": 3644,
+        "PerScaleAUC": [
+          0.7531694536196923,
+          0.8015841867911112,
+          0.8137773534700996,
+          0.8103098247205669,
+          0.8072123989518465
+        ]
+      },
+      "inference_time_sec": 953.7515616416931,
+      "timestamp": "2026-09-17T16:14:26.499059+00:00"
+    }
+  }
+}
