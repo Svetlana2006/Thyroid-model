@@ -1,5 +1,5 @@
 {
-  "state": "trained_pending_evaluation",
+  "state": "complete",
   "active_seed": null,
   "completed_seeds": [
     0,
@@ -9,7 +9,7 @@
     4
   ],
   "sanity": false,
-  "updated_at": "2026-09-17T09:03:41.624252+00:00",
+  "updated_at": "2026-09-17T15:12:38.927338+00:00",
   "tta_scales": [
     0.6,
     0.8,
@@ -17,5 +17,12 @@
     1.2,
     1.4
   ],
-  "training_summary": "C:\\Users\\Dell\\Thyroid-model\\training_experiments\\A1S2V2\\training_summary.json"
+  "training_summary": "C:\\Users\\Dell\\Thyroid-model\\training_experiments\\A1S2V2\\training_summary.json",
+  "dataset": [
+    "ThyroidPretrain"
+  ],
+  "remaining_datasets": [
+    "ThyroidPretrain"
+  ],
+  "summary": "/content/Thyroid-model/training_experiments/A1S2V2/summary.json"
 }
