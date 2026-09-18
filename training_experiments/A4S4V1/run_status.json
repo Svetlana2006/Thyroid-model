@@ -1,0 +1,19 @@
+{
+  "state": "trained_pending_evaluation",
+  "active_seed": null,
+  "completed_seeds": [
+    0,
+    1,
+    2,
+    3,
+    4
+  ],
+  "sanity": false,
+  "updated_at": "2026-09-18T16:45:18.090424+00:00",
+  "tta_scales": [
+    0.75,
+    1.0,
+    1.15
+  ],
+  "training_summary": "/content/Thyroid-model/training_experiments/A4S4V1/training_summary.json"
+}
