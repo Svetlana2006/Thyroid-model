@@ -69,7 +69,7 @@ def make_train_transform():
         A.ColorJitter(brightness=0.15, contrast=0.15, saturation=0.0, hue=0.0, p=1.0),
         A.LongestMaxSize(max_size=256),
         A.PadIfNeeded(min_height=256, min_width=256, border_mode=0),
-        A.CenterCrop(224, 224),
+        A.RandomCrop(224, 224),
         A.GaussianBlur(blur_limit=(3, 3), sigma_limit=(0.1, 1.0), p=0.2),
         A.Normalize(mean=IMAGENET_MEAN, std=IMAGENET_STD),
         ToTensorV2(),
@@ -242,8 +242,6 @@ def run_seed(seed: int, device: torch.device, sanity_check: bool = False):
     final_best_ckpt = seed_dir / "final_best.pt"
     best_ckpt = seed_dir / "best.pt"
     if final_best_ckpt.exists():
-        if best_ckpt.exists():
-            best_ckpt.unlink()
         final_best_ckpt.rename(best_ckpt)
 
     # Save outputs

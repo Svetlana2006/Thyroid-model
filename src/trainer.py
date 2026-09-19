@@ -242,7 +242,7 @@ def train_model(
     print(f"\n  Mode: {'GPU + AMP (float16)' if _USE_AMP else 'CPU (float32)'}")
     print(f"  Max epochs={max_epochs} | patience={patience} | batch={config.get('batch_size','?')}\n")
 
-    # ── Build optimizer & scheduler ONCE before the loop ──────────────────────
+    # ── Build optimizer & scheduler ONCE before the loop ──────────────
     # Rebuilding AdamW every epoch discards all accumulated momentum/variance
     # and wastes CPU cycles. We only rebuild when staged unfreezing adds params.
     optimizer, scheduler = build_optimizer_and_scheduler(
@@ -250,7 +250,25 @@ def train_model(
     )
     _prev_trainable = sum(1 for p in model.parameters() if p.requires_grad)
 
-    for epoch in range(1, max_epochs + 1):
+    # ── Resume from last checkpoint if available ──────────────────────
+    start_epoch = 1
+    if checkpoint_dir:
+        last_ckpt_path = checkpoint_dir / f"{run_name}_last.pt"
+        if last_ckpt_path.exists():
+            print(f"  [RESUME] Loading checkpoint from {last_ckpt_path}")
+            ckpt = torch.load(last_ckpt_path, map_location=device, weights_only=False)
+            model.load_state_dict(ckpt["model_state_dict"])
+            start_epoch = ckpt["epoch"] + 1
+            history = ckpt.get("history", history)
+            if "optimizer_state_dict" in ckpt:
+                optimizer.load_state_dict(ckpt["optimizer_state_dict"])
+            if "scheduler_state_dict" in ckpt:
+                scheduler.load_state_dict(ckpt["scheduler_state_dict"])
+            if "scaler_state_dict" in ckpt and scaler is not None:
+                scaler.load_state_dict(ckpt["scaler_state_dict"])
+            print(f"  [RESUME] Resuming from epoch {start_epoch}")
+
+    for epoch in range(start_epoch, max_epochs + 1):
         if hasattr(model, "freeze_epoch"):
             model.freeze_epoch(epoch)
             # Rebuild optimizer only when staged unfreezing adds new parameters
@@ -295,8 +313,26 @@ def train_model(
                     "model_state_dict": model.state_dict(),
                     "val_auc": val_metrics["auc"],
                     "config": config,
+                    "history": history,
                 },
                 ckpt_path,
+            )
+
+        # Save last.pt checkpoint for full resumability
+        if checkpoint_dir:
+            last_ckpt_path = checkpoint_dir / f"{run_name}_last.pt"
+            torch.save(
+                {
+                    "epoch": epoch,
+                    "model_state_dict": model.state_dict(),
+                    "val_auc": val_metrics["auc"],
+                    "config": config,
+                    "history": history,
+                    "optimizer_state_dict": optimizer.state_dict() if optimizer else None,
+                    "scheduler_state_dict": scheduler.state_dict() if scheduler else None,
+                    "scaler_state_dict": scaler.state_dict() if scaler else None,
+                },
+                last_ckpt_path,
             )
 
         if should_stop:

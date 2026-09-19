@@ -4,7 +4,7 @@
   "dropout": 0.3,
   "pos_weight": 0.5291235710397387,
   "batch_size": 16,
-  "max_epochs": 25,
+  "max_epochs": 1,
   "patience": 10,
   "min_delta": 0.001,
   "T_0": 10,
