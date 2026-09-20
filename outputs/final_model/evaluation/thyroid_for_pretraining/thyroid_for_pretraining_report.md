@@ -3,30 +3,30 @@
 **N:** 3644
 **Benign:** 1641
 **Malignant:** 2003
-**AUROC:** 0.8184
-**95% CI:** [0.8044, 0.8320]
-**PR-AUC:** 0.8259
-**Accuracy:** 0.7426
-**Sensitivity:** 0.8442
-**Specificity:** 0.6185
-**PPV:** 0.7298
-**NPV:** 0.7649
-**F1:** 0.7829
-**Balanced Accuracy:** 0.7314
-**MCC:** 0.4785
-**Cohen's Kappa:** 0.4709
-**TP:** 1691
-**TN:** 1015
-**FP:** 626
-**FN:** 312
-**AUROC_0.70x:** 0.7824
-**AUROC_0.85x:** 0.8068
-**AUROC_1.00x:** 0.8185
-**AUROC_1.15x:** 0.8173
-**AUROC_1.30x:** 0.8096
-**Seed_AUROCs:** [np.float64(0.8122), np.float64(0.8029), np.float64(0.7938), np.float64(0.8123), np.float64(0.8075)]
-**Seed_Mean:** 0.8057
-**Seed_SD:** 0.0069
-**Seed_Min:** 0.7938
-**Seed_Max:** 0.8123
-**Seed_Median:** 0.8075
+**AUROC:** 0.8232
+**95% CI:** [0.8098, 0.8374]
+**PR-AUC:** 0.8275
+**Accuracy:** 0.7582
+**Sensitivity:** 0.8357
+**Specificity:** 0.6636
+**PPV:** 0.7520
+**NPV:** 0.7680
+**F1:** 0.7917
+**Balanced Accuracy:** 0.7497
+**MCC:** 0.5096
+**Cohen's Kappa:** 0.5056
+**TP:** 1674
+**TN:** 1089
+**FP:** 552
+**FN:** 329
+**AUROC_0.70x:** 0.7920
+**AUROC_0.85x:** 0.8140
+**AUROC_1.00x:** 0.8231
+**AUROC_1.15x:** 0.8220
+**AUROC_1.30x:** 0.8134
+**Seed_AUROCs:** [np.float64(0.8178), np.float64(0.8021), np.float64(0.8113), np.float64(0.808), np.float64(0.8101)]
+**Seed_Mean:** 0.8098
+**Seed_SD:** 0.0051
+**Seed_Min:** 0.8021
+**Seed_Max:** 0.8178
+**Seed_Median:** 0.8101
