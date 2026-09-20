@@ -96,7 +96,7 @@ def make_val_transform(scale: float = 1.0):
     max_size = round(256 * scale)
     return A.Compose([
         A.LongestMaxSize(max_size=max_size),
-        A.PadIfNeeded(min_height=max(max_size, 224), min_width=max(max_size, 224), border_mode=0),
+        A.PadIfNeeded(min_height=max(max_size, 256), min_width=max(max_size, 256), border_mode=0),
         A.CenterCrop(224, 224),
         A.Normalize(mean=IMAGENET_MEAN, std=IMAGENET_STD),
         ToTensorV2(),
