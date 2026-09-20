@@ -242,6 +242,8 @@ def run_seed(seed: int, device: torch.device, sanity_check: bool = False):
     final_best_ckpt = seed_dir / "final_best.pt"
     best_ckpt = seed_dir / "best.pt"
     if final_best_ckpt.exists():
+        if best_ckpt.exists():
+            best_ckpt.unlink()
         final_best_ckpt.rename(best_ckpt)
 
     # Save outputs
