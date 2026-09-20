@@ -101,7 +101,7 @@ def make_val_transform(scale: float = 1.0):
         ToTensorV2(),
     ])
 
-TTA_SCALES = [0.85, 1.00, 1.15]
+TTA_SCALES = [0.70, 0.85, 1.00, 1.15, 1.30]
 TTA_TRANSFORMS = [make_val_transform(s) for s in TTA_SCALES]
 
 class KaggleThyroidDataset(Dataset):
@@ -182,10 +182,10 @@ def evaluate(preds_dict):
     y_pred_class = (y_pred_prob >= THRESHOLD).astype(int)
     
     scale_ensemble_logits = []
-    for scale_idx in range(3):
+    for scale_idx in range(5):
         scale_preds = [np.mean([preds_dict[i]["seeds"][s][scale_idx] for s in range(5)]) for i in ids]
         scale_ensemble_logits.append(np.array(scale_preds))
-        
+    
     tn, fp, fn, tp = confusion_matrix(y_true, y_pred_class).ravel()
     ci_l, ci_u = get_bootstrap_ci(y_true, ensemble_logits)
     
@@ -204,9 +204,11 @@ def evaluate(preds_dict):
         "MCC": matthews_corrcoef(y_true, y_pred_class),
         "Cohen's Kappa": cohen_kappa_score(y_true, y_pred_class),
         "TP": int(tp), "TN": int(tn), "FP": int(fp), "FN": int(fn),
-        "AUROC_0.85x": roc_auc_score(y_true, scale_ensemble_logits[0]),
-        "AUROC_1.00x": roc_auc_score(y_true, scale_ensemble_logits[1]),
-        "AUROC_1.15x": roc_auc_score(y_true, scale_ensemble_logits[2]),
+        "AUROC_0.70x": roc_auc_score(y_true, scale_ensemble_logits[0]),
+        "AUROC_0.85x": roc_auc_score(y_true, scale_ensemble_logits[1]),
+        "AUROC_1.00x": roc_auc_score(y_true, scale_ensemble_logits[2]),
+        "AUROC_1.15x": roc_auc_score(y_true, scale_ensemble_logits[3]),
+        "AUROC_1.30x": roc_auc_score(y_true, scale_ensemble_logits[4]),
     }
     
     seed_aurocs = [roc_auc_score(y_true, s_logits) for s_logits in seed_tta_logits]
@@ -259,7 +261,7 @@ def generate_outputs(preds_dict, metrics, y_true, y_pred_prob):
         writer = csv.writer(f)
         header = ["patient_id", "true_label"]
         for s in range(5):
-            header.extend([f"seed{s}_0.85x", f"seed{s}_1.00x", f"seed{s}_1.15x", f"seed{s}_TTA"])
+            header.extend([f"seed{s}_0.70x", f"seed{s}_0.85x", f"seed{s}_1.00x", f"seed{s}_1.15x", f"seed{s}_1.30x", f"seed{s}_TTA"])
         header.extend(["ensemble_TTA_logit", "ensemble_prob", "predicted_class"])
         writer.writerow(header)
         for i in ids:
@@ -269,7 +271,7 @@ def generate_outputs(preds_dict, metrics, y_true, y_pred_prob):
                 scales = preds_dict[i]["seeds"][s]
                 tta = np.mean(scales)
                 seed_tta_logits.append(tta)
-                row.extend([scales[0], scales[1], scales[2], tta])
+                row.extend([scales[0], scales[1], scales[2], scales[3], scales[4], tta])
             ens_logit = np.mean(seed_tta_logits)
             ens_prob = expit(ens_logit)
             pred_class = 1 if ens_prob >= THRESHOLD else 0
@@ -278,7 +280,7 @@ def generate_outputs(preds_dict, metrics, y_true, y_pred_prob):
 
     # Error Analysis
     for i in preds_dict:
-        scale_ens = [np.mean([preds_dict[i]["seeds"][s][s_idx] for s in range(5)]) for s_idx in range(3)]
+        scale_ens = [np.mean([preds_dict[i]["seeds"][s][s_idx] for s in range(5)]) for s_idx in range(5)]
         preds_dict[i]["max_disagreement"] = max(scale_ens) - min(scale_ens)
         preds_dict[i]["prob"] = expit(np.mean([np.mean(preds_dict[i]["seeds"][s]) for s in range(5)]))
         preds_dict[i]["pred_class"] = 1 if preds_dict[i]["prob"] >= THRESHOLD else 0
