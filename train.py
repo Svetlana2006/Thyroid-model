@@ -1,93 +1,30 @@
-"""
-Final Main Training Script for Thyroid Model (Frozen Configuration)
-This replaces the old development train.py with the strict, frozen 5-seed 
-MultiLevelSwin ensemble established by Experiments 17-19.
+"""Final Main Training Script for Thyroid Model (A4S1V2 Configuration)
 
-No external evaluation logic, TTA inference, or Optuna search is performed here.
+This script is exactly identical to the A4S1V2 configuration in
+training_experiments/train_stage2.py. The only difference is the
+output directory: outputs/final_model/ instead of training_experiments/.
 """
+from __future__ import annotations
 
 import argparse
-import csv
 import json
 import os
+import platform
 import random
 import sys
 import time
 from pathlib import Path
 
 import albumentations as A
+from albumentations.pytorch import ToTensorV2
 import numpy as np
 import torch
-import torch.nn as nn
-from albumentations.pytorch import ToTensorV2
-from torch.utils.data import DataLoader, Subset
+from torch.utils.data import ConcatDataset, DataLoader, Subset
 
-# Ensure src is accessible
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+import torch.nn as nn
 import timm
-from src.dataset import TN5000Dataset, AUITDDataset
-from src.trainer import train_model
-from src.transforms import IMAGENET_MEAN, IMAGENET_STD
 
-# ── CPU Heat Mitigation ───────────────────────────────────────────────────────
-_CPU_COUNT = os.cpu_count() or 4
-torch.set_num_threads(max(1, _CPU_COUNT // 2))
-torch.set_num_interop_threads(max(1, _CPU_COUNT // 4))
-
-# ── Paths ─────────────────────────────────────────────────────────────────────
-OUTPUTS_DIR = Path("outputs/final_model")
-DATA_ROOT = Path("data_raw/TN5000_forReview")
-AUITD_ROOT = "data_raw/auitd_dataset"
-TRAIN_TXT = str(DATA_ROOT / "ImageSets/Main/train.txt")
-VAL_TXT = str(DATA_ROOT / "ImageSets/Main/val.txt")
-
-_USE_GPU = torch.cuda.is_available()
-_N_WORK = 4 if _USE_GPU else 0
-
-
-# ── Reproducibility ───────────────────────────────────────────────────────────
-def set_seed(seed=0):
-    random.seed(seed)
-    np.random.seed(seed)
-    torch.manual_seed(seed)
-    torch.cuda.manual_seed_all(seed)
-    torch.backends.cudnn.deterministic = True
-    torch.backends.cudnn.benchmark = False
-
-_CURRENT_SEED = 0
-
-def worker_init_fn(worker_id):
-    global _CURRENT_SEED
-    np.random.seed(_CURRENT_SEED + worker_id)
-
-
-# ── Transforms (Aspect-Ratio Preserving) ──────────────────────────────────────
-def make_train_transform():
-    return A.Compose([
-        A.Rotate(limit=15, p=1.0),
-        A.HorizontalFlip(p=0.5),
-        A.ColorJitter(brightness=0.15, contrast=0.15, saturation=0.0, hue=0.0, p=1.0),
-        A.LongestMaxSize(max_size=256),
-        A.PadIfNeeded(min_height=256, min_width=256, border_mode=0),
-        A.CenterCrop(224, 224),
-        A.GaussianBlur(blur_limit=(3, 3), sigma_limit=(0.1, 1.0), p=0.2),
-        A.Normalize(mean=IMAGENET_MEAN, std=IMAGENET_STD),
-        ToTensorV2(),
-    ])
-
-def make_val_transform():
-    return A.Compose([
-        A.LongestMaxSize(max_size=256),
-        A.PadIfNeeded(min_height=256, min_width=256, border_mode=0),
-        A.CenterCrop(224, 224),
-        A.Normalize(mean=IMAGENET_MEAN, std=IMAGENET_STD),
-        ToTensorV2(),
-    ])
-
-
-# ── Final Architecture (MultiLevelSwin) ───────────────────────────────────────
-PROJ_DIM = 128
-FUSION_DIM = 256
 
 class MultiLevelSwin(nn.Module):
     STAGE_CHANNELS = {"layers.1": 192, "layers.2": 384, "layers.3": 768}
@@ -95,8 +32,10 @@ class MultiLevelSwin(nn.Module):
     def __init__(self, dropout: float = 0.3):
         super().__init__()
         # Pretrained = True exactly as Experiment 19
-        self.backbone = timm.create_model("swin_tiny_patch4_window7_224", pretrained=True, num_classes=0)
-        
+        self.backbone = timm.create_model(
+            "swin_tiny_patch4_window7_224", pretrained=True, num_classes=0
+        )
+
         for param in self.backbone.parameters():
             param.requires_grad = False
 
@@ -106,13 +45,13 @@ class MultiLevelSwin(nn.Module):
         for name, ch in self.STAGE_CHANNELS.items():
             key = name.replace(".", "_")
             self.stage_norms[key] = nn.LayerNorm(ch)
-            self.stage_projs[key] = nn.Linear(ch, PROJ_DIM, bias=False)
+            self.stage_projs[key] = nn.Linear(ch, 128, bias=False)
 
         self.fusion_head = nn.Sequential(
-            nn.Linear(PROJ_DIM * n_stages, FUSION_DIM),
+            nn.Linear(128 * n_stages, 256),
             nn.GELU(),
             nn.Dropout(p=dropout),
-            nn.Linear(FUSION_DIM, 1),
+            nn.Linear(256, 1),
         )
         self._stage_feats: dict = {}
         self._hooks = []
@@ -120,7 +59,9 @@ class MultiLevelSwin(nn.Module):
     def _register_hooks(self):
         for name in self.STAGE_CHANNELS:
             module = dict(self.backbone.named_modules())[name]
-            handle = module.register_forward_hook(lambda mod, inp, out, n=name: self._stage_feats.update({n: out}))
+            handle = module.register_forward_hook(
+                lambda mod, inp, out, n=name: self._stage_feats.update({n: out})
+            )
             self._hooks.append(handle)
 
     def _remove_hooks(self):
@@ -135,7 +76,7 @@ class MultiLevelSwin(nn.Module):
         self._remove_hooks()
         pooled = []
         for name in self.STAGE_CHANNELS:
-            key  = name.replace(".", "_")
+            key = name.replace(".", "_")
             feat = self._stage_feats[name].mean(dim=(1, 2))
             feat = self.stage_norms[key](feat)
             feat = self.stage_projs[key](feat)
@@ -165,123 +106,155 @@ class MultiLevelSwin(nn.Module):
             groups.append({"params": backbone_params, "lr": lr_backbone})
         groups.append({"params": head_params, "lr": lr_head})
         return groups
+from src.dataset import AUITDDataset, TN5000Dataset
+from src.trainer import train_model
+from src.transforms import IMAGENET_MEAN, IMAGENET_STD
+
+ROOT = Path(__file__).resolve().parent
+TN5000_ROOT = ROOT / "data_raw" / "TN5000_forReview"
+AUITD_ROOT = ROOT / "data_raw" / "auitd_dataset"
+SEEDS = (0, 1, 2, 3, 4)
+OUT = Path("outputs/final_model")
+NUM_WORKERS = min(2, os.cpu_count() or 1)
 
 
-# ── Training Procedure ────────────────────────────────────────────────────────
-def run_seed(seed: int, device: torch.device, sanity_check: bool = False):
-    print(f"\n{'='*60}\n  Training Final Model - Seed {seed}\n{'='*60}")
-    
-    global _CURRENT_SEED
-    _CURRENT_SEED = seed
-    set_seed(seed)
+def set_seed(seed: int) -> None:
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
 
-    # 1. Datasets
-    train_t = make_train_transform()
-    val_t = make_val_transform()
 
-    tn5000_train = TN5000Dataset(str(DATA_ROOT), TRAIN_TXT, transform=train_t)
-    auitd_train = AUITDDataset(AUITD_ROOT, transform=train_t)
-    train_ds = torch.utils.data.ConcatDataset([tn5000_train, auitd_train])
-    
-    val_ds = TN5000Dataset(str(DATA_ROOT), VAL_TXT, transform=val_t)
-
-    # Sanity truncation
-    if sanity_check:
-        print("  [SANITY CHECK] Truncating dataset to 2 batches...")
-        train_ds = Subset(train_ds, list(range(32)))
-        val_ds = Subset(val_ds, list(range(32)))
-
-    # Pos Weight
-    all_labels = np.concatenate([
-        TN5000Dataset(str(DATA_ROOT), TRAIN_TXT).get_labels(),
-        AUITDDataset(AUITD_ROOT).get_labels()
-    ])
-    pos_weight = float((all_labels == 0).sum() / (all_labels == 1).sum())
-
-    # 2. Config
-    config = {
-        "lr_head": 3e-4, "weight_decay": 1e-4, "dropout": 0.3,
-        "pos_weight": pos_weight, "batch_size": 16,
-        "max_epochs": 1 if sanity_check else 25, 
-        "patience": 10, "min_delta": 0.001,
-        "T_0": 10, "T_mult": 2, "grad_clip_norm": 1.0, "label_smooth_eps": 0.05,
-    }
-
-    model = MultiLevelSwin(dropout=config["dropout"])
-    total_params = sum(p.numel() for p in model.parameters())
-
-    print(f"Config logged:")
-    print(f"  Seed: {seed}")
-    print(f"  Train samples: {len(train_ds)} | Val samples: {len(val_ds)}")
-    print(f"  Model: MultiLevelSwin | Total Params: {total_params:,}")
-    print(f"  Optimizer: AdamW | LR Head: {config['lr_head']} | LR Backbone: {config['lr_head']*0.1}")
-    print(f"  Batch size: {config['batch_size']} | Max Epochs: {config['max_epochs']}")
-
-    # 3. Loaders
-    kw = dict(num_workers=_N_WORK, pin_memory=_USE_GPU, worker_init_fn=worker_init_fn)
-    train_loader = DataLoader(train_ds, batch_size=config["batch_size"], shuffle=True, **kw)
-    val_loader   = DataLoader(val_ds, batch_size=config["batch_size"]*2, shuffle=False, **kw)
-
-    # 4. Train using existing src.trainer (which matches Exp 19 perfectly)
-    seed_dir = OUTPUTS_DIR / f"seed{seed}"
-    seed_dir.mkdir(parents=True, exist_ok=True)
-    
-    t0 = time.time()
-    history = train_model(
-        model=model,
-        train_loader=train_loader,
-        val_loader=val_loader,
-        config=config,
-        checkpoint_dir=str(seed_dir),
-        run_name="final",
-        device=device
-    )
-    train_time = time.time() - t0
-
-    # Ensure checkpoint is named best.pt instead of final_best.pt
-    final_best_ckpt = seed_dir / "final_best.pt"
-    best_ckpt = seed_dir / "best.pt"
-    if final_best_ckpt.exists():
-        final_best_ckpt.rename(best_ckpt)
-
-    # Save outputs
-    with open(seed_dir / "config.json", "w") as f:
-        json.dump(config, f, indent=2)
-    with open(seed_dir / "training_log.json", "w") as f:
-        json.dump(history, f, indent=2)
-
+def ar_definition(ar: str) -> str:
     return {
-        "seed": seed,
-        "best_epoch": history.get("best_epoch", history.get("epoch", 0)),
-        "best_val_auc": history.get("best_val_auc", 0.0),
-        "train_time_sec": train_time
-    }
+        "A1": "Longest side 256; pad only as needed for a 224 crop; crop 224.",
+        "A4": "Longest side 256; pad canvas to 256x256; crop 224.",
+    }[ar]
+
+
+def _geometry(ar: str, crop_cls):
+    if ar == "A1":
+        return [A.LongestMaxSize(max_size=256),
+                A.PadIfNeeded(min_height=224, min_width=224, border_mode=0),
+                crop_cls(224, 224)]
+    if ar == "A4":
+        return [A.LongestMaxSize(max_size=256),
+                A.PadIfNeeded(min_height=256, min_width=256, border_mode=0),
+                crop_cls(224, 224)]
+    raise ValueError(f"Unsupported selected AR setting: {ar}")
+
+
+def make_train_transform(ar: str):
+    return A.Compose([
+        A.Rotate(limit=15, p=1.0), A.HorizontalFlip(p=0.5),
+        A.ColorJitter(brightness=0.15, contrast=0.15, saturation=0.0, hue=0.0, p=1.0),
+        *_geometry(ar, A.RandomCrop),
+        A.GaussianBlur(blur_limit=(3, 3), sigma_limit=(0.1, 1.0), p=0.2),
+        A.Normalize(mean=IMAGENET_MEAN, std=IMAGENET_STD), ToTensorV2(),
+    ])
+
+
+def make_val_transform(ar: str):
+    return A.Compose([*_geometry(ar, A.CenterCrop),
+                      A.Normalize(mean=IMAGENET_MEAN, std=IMAGENET_STD), ToTensorV2()])
+
+
+@torch.no_grad()
+def seed_logits(checkpoint: Path, dataset, device, description, batch_size: int = 4):
+    loader = DataLoader(dataset, batch_size=batch_size, shuffle=False,
+                        num_workers=NUM_WORKERS if device.type == "cuda" else 0)
+    model = MultiLevelSwin(dropout=0.0).to(device)
+    state = torch.load(checkpoint, map_location=device, weights_only=False)
+    model.load_state_dict(state["model_state_dict"])
+    model.eval()
+    result = {}
+    for tensors, labels, ids in loader:
+        b, views, c, h, w = tensors.shape
+        logits = model(tensors.to(device).reshape(b * views, c, h, w)).squeeze(1).reshape(b, views).cpu().float().numpy()
+        for i, item_id in enumerate(ids):
+            result[item_id] = (int(labels[i]), logits[i])
+    del model
+    if device.type == "cuda":
+        torch.cuda.empty_cache()
+    return result
+
+
+def run_seed(ar, scales, seed, base_dir, sanity=False):
+    seed_dir = base_dir / f"seed{seed}"
+    if seed_dir.exists() and any(seed_dir.iterdir()):
+        raise FileExistsError(f"Refusing to overwrite existing run: {seed_dir}")
+    seed_dir.mkdir(parents=True)
+    print(f"\n{'=' * 70}\n[RUN] A4S1V2 | seed {seed}/4 | AR=A4 | TTA={scales}\n{'=' * 70}", flush=True)
+    set_seed(seed)
+    train_set = ConcatDataset([TN5000Dataset(str(TN5000_ROOT), str(TN5000_ROOT / "ImageSets/Main/train.txt"), make_train_transform(ar)),
+                               AUITDDataset(str(AUITD_ROOT), make_train_transform(ar))])
+    val_set = TN5000Dataset(str(TN5000_ROOT), str(TN5000_ROOT / "ImageSets/Main/val.txt"), make_val_transform(ar))
+    if sanity:
+        train_set, val_set = Subset(train_set, range(32)), Subset(val_set, range(32))
+    labels = np.concatenate([TN5000Dataset(str(TN5000_ROOT), str(TN5000_ROOT / "ImageSets/Main/train.txt")).get_labels(),
+                              AUITDDataset(str(AUITD_ROOT)).get_labels()])
+    config = {"lr_head": 3e-4, "weight_decay": 1e-4, "dropout": 0.3,
+              "pos_weight": float((labels == 0).sum() / (labels == 1).sum()), "batch_size": 16,
+              "max_epochs": 1 if sanity else 25, "patience": 10, "min_delta": 0.001,
+              "T_0": 10, "T_mult": 2, "grad_clip_norm": 1.0, "label_smooth_eps": 0.05}
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    workers = NUM_WORKERS if device.type == "cuda" else 0
+    train_loader = DataLoader(train_set, batch_size=16, shuffle=True, num_workers=workers, pin_memory=device.type == "cuda")
+    val_loader = DataLoader(val_set, batch_size=32, shuffle=False, num_workers=workers, pin_memory=device.type == "cuda")
+    model = MultiLevelSwin(dropout=0.3)
+    started = time.time()
+    history = train_model(model, train_loader, val_loader, config, str(seed_dir), "final", device)
+    elapsed = time.time() - started
+    generated = seed_dir / "final_best.pt"
+    generated.rename(seed_dir / "best.pt")
+    best_epoch = int(np.argmax(history["val_auc"]) + 1)
+    metadata = {"config": "A4S1V2", "ar": "A4", "ar_definition": ar_definition(ar), "tta_scales": scales,
+                "tta_views": len(scales), "seed": seed, "best_epoch": best_epoch,
+                "best_val_auc": history["best_val_auc"], "training_time_sec": elapsed,
+                "training_samples": len(train_set), "validation_samples": len(val_set),
+                "checkpoint": str((seed_dir / "best.pt").resolve()), "model": "MultiLevelSwin / Swin-Tiny",
+                "parameter_count": sum(p.numel() for p in model.parameters()), "torch": torch.__version__,
+                "cuda_available": torch.cuda.is_available(), "device": str(device), "platform": platform.platform(), "sanity": sanity}
+    (seed_dir / "config.json").write_text(json.dumps(metadata, indent=2), encoding="utf-8")
+    (seed_dir / "training_log.json").write_text(json.dumps(history), encoding="utf-8")
+    print(f"[RUN COMPLETE] A4S1V2 | seed {seed}/4 | best epoch={best_epoch} | "
+          f"best validation AUC={history['best_val_auc']:.4f}", flush=True)
+    return metadata
+
 
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--sanity-check", action="store_true", help="Run 1 epoch with 2 batches to verify pipeline.")
     args = parser.parse_args()
+    print(f"{'=' * 70}")
+    print(f"A4S1V2 Training — outputs/final_model/")
+    print(f"{'=' * 70}", flush=True)
 
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    print(f"Device: {device}")
-
-    OUTPUTS_DIR.mkdir(parents=True, exist_ok=True)
-
-    SEEDS = [0] if args.sanity_check else [0, 1, 2, 3, 4]
-    results = []
-
-    for s in SEEDS:
-        r = run_seed(s, device, sanity_check=args.sanity_check)
-        results.append(r)
+    ar = "A4"
+    scales = [0.70, 0.85, 1.00, 1.15, 1.30]
+    metadata = []
+    for seed in SEEDS:
+        seed_dir = OUT / f"seed{seed}"
+        config_path = seed_dir / "config.json"
+        checkpoint = seed_dir / "best.pt"
+        if config_path.is_file() and checkpoint.is_file():
+            existing = json.loads(config_path.read_text(encoding="utf-8"))
+            if not existing.get("sanity", False):
+                print(f"[RESUME] A4S1V2 | seed {seed}/4 already complete; preserving it.", flush=True)
+                metadata.append(existing)
+                continue
+        metadata.append(run_seed(ar, scales, seed, OUT, sanity=args.sanity_check))
 
     if not args.sanity_check:
-        summary_path = OUTPUTS_DIR / "summary.csv"
-        fieldnames = ["seed", "best_epoch", "best_val_auc", "train_time_sec"]
-        with open(summary_path, "w", newline="") as f:
-            w = csv.DictWriter(f, fieldnames=fieldnames)
-            w.writeheader()
-            w.writerows(results)
-        print(f"\nFinal training complete. Summary saved to {summary_path}")
+        training_summary = {"config": "A4S1V2", "ar": "A4", "ar_definition": ar_definition(ar),
+                            "tta_scales": scales, "tta_views": len(scales), "seeds": metadata,
+                            "total_training_time_sec": sum(x["training_time_sec"] for x in metadata),
+                            "timestamp": time.strftime("%Y-%m-%dT%H:%M:%S%z")}
+        (OUT / "training_summary.json").write_text(json.dumps(training_summary, indent=2), encoding="utf-8")
+        print(f"[TRAINING COMPLETE] A4S1V2. Summary saved to {OUT / 'training_summary.json'}", flush=True)
+
 
 if __name__ == "__main__":
     main()

@@ -33,11 +33,8 @@ try:
 except ImportError:
     HAS_TQDM = False
 
-import timm
 from src.transforms import IMAGENET_MEAN, IMAGENET_STD
 
-PROJ_DIM = 128
-FUSION_DIM = 256
 THRESHOLD = 0.5912
 DIVESH_EXPECTED_AUC = 0.8244150886
 
@@ -46,51 +43,11 @@ FIG_DIR = OUTPUT_DIR / "figures"
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 FIG_DIR.mkdir(parents=True, exist_ok=True)
 
-class MultiLevelSwin(nn.Module):
-    STAGE_CHANNELS = {"layers.1": 192, "layers.2": 384, "layers.3": 768}
-    def __init__(self, dropout: float = 0.0):
-        super().__init__()
-        self.backbone = timm.create_model("swin_tiny_patch4_window7_224", pretrained=False, num_classes=0)
-        n_stages = len(self.STAGE_CHANNELS)
-        self.stage_norms = nn.ModuleDict()
-        self.stage_projs = nn.ModuleDict()
-        for name, ch in self.STAGE_CHANNELS.items():
-            key = name.replace(".", "_")
-            self.stage_norms[key] = nn.LayerNorm(ch)
-            self.stage_projs[key] = nn.Linear(ch, PROJ_DIM, bias=False)
-        self.fusion_head = nn.Sequential(
-            nn.Linear(PROJ_DIM * n_stages, FUSION_DIM),
-            nn.GELU(),
-            nn.Dropout(p=dropout),
-            nn.Linear(FUSION_DIM, 1),
-        )
-        self._stage_feats = {}
-        self._hooks = []
-
-    def _register_hooks(self):
-        for name in self.STAGE_CHANNELS:
-            module = dict(self.backbone.named_modules())[name]
-            handle = module.register_forward_hook(lambda mod, inp, out, n=name: self._stage_feats.update({n: out}))
-            self._hooks.append(handle)
-
-    def _remove_hooks(self):
-        for h in self._hooks: h.remove()
-        self._hooks.clear()
-
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        self._stage_feats.clear()
-        self._register_hooks()
-        _ = self.backbone(x)
-        self._remove_hooks()
-        pooled = []
-        for name in self.STAGE_CHANNELS:
-            key = name.replace(".", "_")
-            feat = self._stage_feats[name].mean(dim=(1, 2))
-            feat = self.stage_norms[key](feat)
-            feat = self.stage_projs[key](feat)
-            pooled.append(feat)
-        fused = torch.cat(pooled, dim=-1)
-        return self.fusion_head(fused)
+# Import MultiLevelSwin from train.py (A4S1V2 configuration)
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from train import MultiLevelSwin
 
 def make_val_transform(scale: float = 1.0):
     max_size = round(256 * scale)
@@ -314,7 +271,7 @@ def main():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     divesh_path = kagglehub.dataset_download('diveshzz/thyroid-cancer-classification-ultrasound-dataset')
     ds = DiveshDataset(divesh_path)
-    loader = DataLoader(ds, batch_size=8, num_workers=4 if torch.cuda.is_available() else 0)
+    loader = DataLoader(ds, batch_size=4, num_workers=min(2, os.cpu_count() or 1) if torch.cuda.is_available() else 0)
     
     from collections import defaultdict
     all_preds = defaultdict(lambda: {"label": None, "seeds": []})
