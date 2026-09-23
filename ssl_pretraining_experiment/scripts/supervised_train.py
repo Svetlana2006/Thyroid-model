@@ -8,6 +8,7 @@ import json
 import time
 import random
 import sys
+import cv2
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -116,7 +117,7 @@ def make_train_transform():
         A.HorizontalFlip(p=0.5),
         A.ColorJitter(brightness=0.15, contrast=0.15, saturation=0.0, hue=0.0, p=1.0),
         A.LongestMaxSize(max_size=256),
-        A.PadIfNeeded(min_height=256, min_width=256, border_mode=0),
+        A.PadIfNeeded(min_height=256, min_width=256, border_mode=cv2.BORDER_CONSTANT, value=0),
         A.CenterCrop(224, 224),
         A.GaussianBlur(blur_limit=(3, 3), sigma_limit=(0.1, 1.0), p=0.2),
         A.Normalize(mean=IMAGENET_MEAN, std=IMAGENET_STD),
@@ -126,7 +127,7 @@ def make_train_transform():
 def make_val_transform():
     return A.Compose([
         A.LongestMaxSize(max_size=256),
-        A.PadIfNeeded(min_height=256, min_width=256, border_mode=0),
+        A.PadIfNeeded(min_height=256, min_width=256, border_mode=cv2.BORDER_CONSTANT, value=0),
         A.CenterCrop(224, 224),
         A.Normalize(mean=IMAGENET_MEAN, std=IMAGENET_STD),
         ToTensorV2(),
