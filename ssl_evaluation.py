@@ -56,8 +56,7 @@ OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 FIG_DIR.mkdir(parents=True, exist_ok=True)
 
 # Import MultiLevelSwin from the SSL experiment's supervised_train module
-sys.path.insert(0, str(Path(__file__).resolve().parent))
-from scripts.supervised_train import MultiLevelSwin, make_val_transform
+from ssl_pretraining_experiment.scripts.supervised_train import MultiLevelSwin, make_val_transform
 
 TTA_SCALES = [0.70, 0.85, 1.00, 1.15, 1.30]
 TTA_TRANSFORMS = [make_val_transform(s) for s in TTA_SCALES]
