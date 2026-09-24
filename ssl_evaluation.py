@@ -56,9 +56,29 @@ OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 FIG_DIR.mkdir(parents=True, exist_ok=True)
 
 # Import MultiLevelSwin from the SSL experiment's supervised_train module
-from ssl_pretraining_experiment.scripts.supervised_train import MultiLevelSwin, make_val_transform
+from ssl_pretraining_experiment.scripts.supervised_train import MultiLevelSwin
+from src.transforms import IMAGENET_MEAN, IMAGENET_STD
+
+THRESHOLD = 0.5912
+
+OUTPUT_DIR = Path("ssl_pretraining_experiment/evaluation")
+FIG_DIR = OUTPUT_DIR / "figures"
+OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+FIG_DIR.mkdir(parents=True, exist_ok=True)
 
 TTA_SCALES = [0.70, 0.85, 1.00, 1.15, 1.30]
+
+def make_val_transform(scale: float = 1.0):
+    """Create TTA transform for a given scale (matches baseline evaluation scripts)"""
+    max_size = round(256 * scale)
+    return A.Compose([
+        A.LongestMaxSize(max_size=max_size),
+        A.PadIfNeeded(min_height=max(max_size, 256), min_width=max(max_size, 256), border_mode=0),
+        A.CenterCrop(224, 224),
+        A.Normalize(mean=IMAGENET_MEAN, std=IMAGENET_STD),
+        ToTensorV2(),
+    ])
+
 TTA_TRANSFORMS = [make_val_transform(s) for s in TTA_SCALES]
 
 # Baseline results (A4S1V2, ImageNet-pretrained) for comparison
