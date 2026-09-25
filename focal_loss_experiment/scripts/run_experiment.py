@@ -330,7 +330,7 @@ def _train_one_epoch(model, loader, loss_fn, optimizer, scheduler, scaler,
     all_labels = []
     t0 = time.time()
     iterator = tqdm(loader, desc=f"Training {run_name}", leave=False) if HAS_TQDM else loader
-    for images, targets, _ in iterator:
+    for images, targets in iterator:
         images = images.to(DEVICE)
         targets = targets.to(DEVICE)
         optimizer.zero_grad(set_to_none=True)
