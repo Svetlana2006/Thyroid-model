@@ -358,7 +358,7 @@ def _validate(model, loader, loss_fn):
     all_logits = []
     all_labels = []
     with torch.no_grad():
-        for images, targets, _ in loader:
+        for images, targets in loader:
             images = images.to(DEVICE)
             targets = targets.to(DEVICE)
             with torch.amp.autocast("cuda" if USE_AMP else "cpu", enabled=USE_AMP):
