@@ -680,7 +680,7 @@ def evaluate_thyroid_pretraining(checkpoint_path: str):
             logits = model(tensors).squeeze(-1).view(B, num_imgs, num_tta).cpu().float().numpy()
             for i in range(B):
                 pid = pids[i]
-                label = int(labels[i])
+                label = int(labels[i, 0])
                 all_preds[pid]["label"] = label
                 
                 for scale_idx in range(5):
