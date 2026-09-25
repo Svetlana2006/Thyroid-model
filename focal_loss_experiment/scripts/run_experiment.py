@@ -313,19 +313,19 @@ def compute_metrics(y_true, logits, threshold=THRESHOLD):
     ci_low, ci_high = get_bootstrap_ci(y_true, logits)
     try:
         auroc = roc_auc_score(y_true, logits)
-    except ValueError:
+    except Exception:
         auroc = float("nan")
     try:
         pr_auc = average_precision_score(y_true, probs)
-    except ValueError:
+    except Exception:
         pr_auc = 0.0
     try:
         mcc = matthews_corrcoef(y_true, preds)
-    except ValueError:
+    except Exception:
         mcc = 0.0
     try:
         kappa = cohen_kappa_score(y_true, preds)
-    except ValueError:
+    except Exception:
         kappa = float("nan")
     return {
         "N": len(y_true), "Benign": int(np.sum(y_true == 0)), "Malignant": int(np.sum(y_true == 1)),
