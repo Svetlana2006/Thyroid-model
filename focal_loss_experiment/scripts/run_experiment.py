@@ -291,6 +291,8 @@ def get_bootstrap_ci(y_true, y_pred, n_bootstraps=1000, ci=95):
             continue
         scores.append(roc_auc_score(y_true[idx], y_pred[idx]))
     scores.sort()
+    if not scores:
+        return float("nan"), float("nan")
     return float(np.percentile(scores, (100 - ci) / 2)), float(np.percentile(scores, 100 - (100 - ci) / 2))
 
 
@@ -301,24 +303,38 @@ def compute_metrics(y_true, logits, threshold=THRESHOLD):
     if cm.shape == (2, 2):
         tn, fp, fn, tp = cm.ravel()
     else:
-        # Handle edge case: all predictions same class
         if len(np.unique(preds)) == 1:
             if preds[0] == 1:
                 tp, fp, fn, tn = len(y_true), 0, 0, 0
             else:
                 tn, fn, fp, tp = len(y_true), 0, 0, 0
         else:
-            # Fallback: just use zeros
             tn = fp = fn = tp = 0
     ci_low, ci_high = get_bootstrap_ci(y_true, logits)
+    try:
+        auroc = roc_auc_score(y_true, logits)
+    except ValueError:
+        auroc = float("nan")
+    try:
+        pr_auc = average_precision_score(y_true, probs)
+    except ValueError:
+        pr_auc = 0.0
+    try:
+        mcc = matthews_corrcoef(y_true, preds)
+    except ValueError:
+        mcc = 0.0
+    try:
+        kappa = cohen_kappa_score(y_true, preds)
+    except ValueError:
+        kappa = float("nan")
     return {
         "N": len(y_true), "Benign": int(np.sum(y_true == 0)), "Malignant": int(np.sum(y_true == 1)),
-        "AUROC": roc_auc_score(y_true, logits), "95% CI": f"[{ci_low:.4f}, {ci_high:.4f}]",
-        "PR-AUC": average_precision_score(y_true, probs), "Accuracy": accuracy_score(y_true, preds),
+        "AUROC": auroc, "95% CI": f"[{ci_low:.4f}, {ci_high:.4f}]",
+        "PR-AUC": pr_auc, "Accuracy": accuracy_score(y_true, preds),
         "Sensitivity": recall_score(y_true, preds), "Specificity": tn / (tn + fp) if (tn + fp) > 0 else 0,
         "PPV": precision_score(y_true, preds, zero_division=0), "NPV": tn / (tn + fn) if (tn + fn) > 0 else 0,
         "F1": f1_score(y_true, preds), "Balanced Accuracy": balanced_accuracy_score(y_true, preds),
-        "MCC": matthews_corrcoef(y_true, preds), "Cohen's Kappa": cohen_kappa_score(y_true, preds),
+        "MCC": mcc, "Cohen's Kappa": kappa,
         "TP": int(tp), "TN": int(tn), "FP": int(fp), "FN": int(fn),
     }
 
