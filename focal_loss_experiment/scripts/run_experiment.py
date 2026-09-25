@@ -30,14 +30,14 @@ from sklearn.metrics import (
 )
 from albumentations.pytorch import ToTensorV2
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 from focal_loss_experiment.scripts.focal_loss import BinaryFocalLoss, test_focal_loss
 from src.dataset import TN5000Dataset, AUITDDataset
 from src.transforms import IMAGENET_MEAN, IMAGENET_STD
 import timm
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 EXP_DIR = ROOT / "focal_loss_experiment"
 SEED0_DIR = EXP_DIR / "seed0"
 RESULTS_DIR = EXP_DIR / "results"
@@ -85,13 +85,14 @@ class MultiLevelSwin(nn.Module):
         )
         self._feature_cache = {}
 
-    def _forward_hook(self, module, input, output, name):
-        self._feature_cache[name] = output
-
     def _register_hooks(self):
+        def _make_hook(name):
+            def _hook(module, inputs, output):
+                self._feature_cache[name] = output
+            return _hook
         for name in ["layers.1", "layers.2", "layers.3"]:
             module = dict(self.backbone.named_modules())[name]
-            module.register_forward_hook(self._forward_hook)
+            module.register_forward_hook(_make_hook(name))
 
     def forward(self, x):
         self._feature_cache = {}
@@ -372,9 +373,10 @@ def _validate(model, loader, loss_fn):
 
 def _save_checkpoint(path: Path, epoch: int, model: nn.Module, loss_fn: nn.Module,
                      optimizer: torch.optim.Optimizer, scheduler, scaler,
-                     history: dict, config: dict, val_auc: float):
+                     history: dict, config: dict, val_auc: float, best_val_auc: float):
     torch.save({
         "epoch": epoch, "model_state_dict": model.state_dict(), "val_auc": val_auc,
+        "best_val_auc": best_val_auc,
         "config": config, "history": history,
         "optimizer_state_dict": optimizer.state_dict() if optimizer else None,
         "scheduler_state_dict": scheduler.state_dict() if scheduler else None,
@@ -462,14 +464,14 @@ def train_seed0():
         if val_auc > best_val_auc:
             best_val_auc = val_auc
             counter = 0
-            _save_checkpoint(best_ckpt, epoch, model, loss_fn, optimizer, scheduler, scaler, history, config, best_val_auc)
+            _save_checkpoint(best_ckpt, epoch, model, loss_fn, optimizer, scheduler, scaler, history, config, best_val_auc, best_val_auc)
             print(f"  New best checkpoint saved.")
         else:
             counter += 1
             if counter >= patience:
                 print(f"Early stopping at epoch {epoch}. Best val AUC = {best_val_auc:.4f}")
                 break
-        _save_checkpoint(last_ckpt, epoch, model, loss_fn, optimizer, scheduler, scaler, history, config, val_auc)
+        _save_checkpoint(last_ckpt, epoch, model, loss_fn, optimizer, scheduler, scaler, history, config, val_auc, best_val_auc)
 
     if best_ckpt.exists():
         ckpt = torch.load(best_ckpt, map_location=DEVICE, weights_only=False)
@@ -530,14 +532,95 @@ def evaluate_tn5000(checkpoint_path: str):
     return metrics
 
 
+def _run_sanity():
+    print("=" * 70)
+    print("FOCAL LOSS EXPERIMENT — SANITY CHECKS")
+    print("=" * 70)
+
+    # 1. Focal loss unit tests
+    print("\n[1/6] Running focal loss unit tests...")
+    ok = test_focal_loss()
+    if not ok:
+        print("Focal loss unit tests FAILED — aborting.")
+        raise SystemExit(1)
+
+    # 2. Model initialization
+    print("\n[2/6] Model initialization...")
+    model = MultiLevelSwin(dropout=0.3).to(DEVICE)
+    n_params = sum(p.numel() for p in model.parameters())
+    n_trainable = sum(p.numel() for p in model.parameters() if p.requires_grad)
+    print(f"  Total params: {n_params:,} | Trainable (epoch 1): {n_trainable:,}")
+    x = torch.randn(2, 3, 224, 224).to(DEVICE)
+    out = model(x)
+    assert out.shape == (2, 1), f"Expected (2,1), got {out.shape}"
+    print(f"  Forward output shape: {out.shape} [OK]")
+
+    # 3. Freeze schedule
+    print("\n[3/6] Freeze schedule...")
+    for ep in [1, 5, 6, 9, 10, 25]:
+        model.freeze_epoch(ep)
+        n_tr = sum(1 for p in model.parameters() if p.requires_grad)
+        print(f"  Epoch {ep}: trainable params={n_tr}")
+
+    # 4. Dataset loading
+    print("\n[4/6] Dataset loading...")
+    train_t = make_train_transform()
+    tn_ds = TN5000Dataset(str(TN5000_ROOT), str(TN5000_ROOT / "ImageSets" / "Main" / "train.txt"), train_t)
+    au_ds = AUITDDataset(str(AUITD_ROOT), train_t)
+    print(f"  TN5000 train: {len(tn_ds)} | AUITD: {len(au_ds)}")
+    sample = tn_ds[0]
+    assert sample[0].shape[0] == 3, f"Expected 3-channel image, got {sample[0].shape}"
+    print(f"  Sample image shape: {sample[0].shape} [OK]")
+    val_ds = TN5000Dataset(str(TN5000_ROOT), str(TN5000_ROOT / "ImageSets" / "Main" / "val.txt"), make_val_transform())
+    print(f"  TN5000 val: {len(val_ds)}")
+    test_ds = TN5000TestDataset(str(TN5000_ROOT))
+    print(f"  TN5000 test: {len(test_ds)}")
+
+    # 5. TTA transforms
+    print("\n[5/6] TTA transforms...")
+    print(f"  TTA scales: {TTA_SCALES}")
+    print(f"  Total TTA transforms: {len(TTA_TRANSFORMS)}")
+    sample_id = test_ds[0][2]  # __getitem__ returns (tensors, label, id)
+    img = cv2.imread(str(TN5000_ROOT / "JPEGImages" / f"{sample_id}.jpg"))
+    img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+    tensors = torch.stack([t(image=img)["image"] for t in TTA_TRANSFORMS])
+    assert tensors.shape[1:] == (3, 224, 224), f"Unexpected shape: {tensors.shape}"
+    print(f"  TTA tensor shape: {tensors.shape} [OK]")
+
+    # 6. External datasets
+    print("\n[6/6] External datasets...")
+    divesh_path = ROOT / "data_raw" / "divesh"
+    if divesh_path.exists():
+        divesh_ds = DiveshzzDataset(str(divesh_path))
+        print(f"  Diveshzz: {len(divesh_ds)} samples")
+    else:
+        print(f"  Diveshzz: not found at {divesh_path}")
+
+    thyroid_path = ROOT / "data_raw" / "Thyroid_for_Pretraining"
+    if thyroid_path.exists():
+        thyroid_ds = ThyroidPretrainingDataset(str(thyroid_path))
+        print(f"  Thyroid for Pretraining: {len(thyroid_ds)} patients")
+    else:
+        print(f"  Thyroid for Pretraining: not found at {thyroid_path}")
+
+    # 7. Pos weight
+    print("\n[7/7] Pos weight...")
+    pw = get_pos_weight()
+    print(f"  pos_weight = {pw:.4f}")
+
+    print("\n" + "=" * 70)
+    print("ALL SANITY CHECKS PASSED")
+    print("=" * 70)
+    return True
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("command", choices=["sanity", "train", "eval", "all"], default="all")
     parser.add_argument("--checkpoint", type=str, default=None)
     args = parser.parse_args()
     if args.command == "sanity":
-        ok = test_focal_loss()
-        raise SystemExit(0 if ok else 1)
+        _run_sanity()
     elif args.command == "train":
         train_seed0()
     elif args.command == "eval":
