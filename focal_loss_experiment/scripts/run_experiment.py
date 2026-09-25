@@ -422,12 +422,25 @@ def train_seed0():
         print(f"Resuming from checkpoint: {last_ckpt}")
         ckpt = torch.load(last_ckpt, map_location=DEVICE, weights_only=False)
         model.load_state_dict(ckpt["model_state_dict"])
-        optimizer.load_state_dict(ckpt["optimizer_state_dict"])
-        scheduler.load_state_dict(ckpt["scheduler_state_dict"])
+        saved_epoch = ckpt["epoch"]
+        model.freeze_epoch(saved_epoch)
+        try:
+            optimizer.load_state_dict(ckpt["optimizer_state_dict"])
+        except (ValueError, RuntimeError):
+            print("  Rebuilding optimizer (param groups changed)...")
+            optimizer = torch.optim.AdamW(model.get_param_groups(LR_HEAD, LR_HEAD * 0.1), weight_decay=1e-4)
+        try:
+            scheduler.load_state_dict(ckpt["scheduler_state_dict"])
+        except (ValueError, RuntimeError):
+            print("  Rebuilding scheduler...")
+            scheduler = torch.optim.lr_scheduler.CosineAnnealingWarmRestarts(optimizer, T_0=WARMUP_EPOCHS, T_mult=2)
         if ckpt.get("scaler_state_dict"):
-            scaler.load_state_dict(ckpt["scaler_state_dict"])
+            try:
+                scaler.load_state_dict(ckpt["scaler_state_dict"])
+            except Exception:
+                pass
         history = ckpt.get("history", history)
-        start_epoch = ckpt["epoch"] + 1
+        start_epoch = saved_epoch + 1
         best_val_auc = ckpt.get("best_val_auc", -1e9)
         print(f"Resuming from epoch {start_epoch}")
 
@@ -499,7 +512,8 @@ def evaluate_tn5000(checkpoint_path: str):
     model.eval()
     ds = TN5000TestDataset(str(TN5000_ROOT))
     loader = DataLoader(ds, batch_size=4, shuffle=False, num_workers=NUM_WORKERS)
-    all_preds = defaultdict(lambda: {"label": None, "logits": [[] for _ in TTA_SCALES]})
+    
+    all_preds = defaultdict(lambda: {"label": None, "scale_logits": [[] for _ in range(5)]})
     with torch.no_grad():
         for tensors, labels, ids in loader:
             tensors = tensors.to(DEVICE)
@@ -509,16 +523,22 @@ def evaluate_tn5000(checkpoint_path: str):
             for i in range(B):
                 obj_id = ids[i]
                 all_preds[obj_id]["label"] = int(labels[i])
-                for s_idx in range(num_tta):
-                    all_preds[obj_id]["logits"][s_idx].append(logits[i, s_idx])
-
+                
+                # Group 50 TTA logits into 5 scales (10 per scale)
+                # TTA transforms are ordered: scale0: 0-9, scale1: 10-19, scale2: 20-29, scale3: 30-39, scale4: 40-49
+                for scale_idx in range(5):
+                    start_idx = scale_idx * 10
+                    end_idx = start_idx + 10
+                    scale_logit = np.mean(logits[i, start_idx:end_idx])
+                    all_preds[obj_id]["scale_logits"][scale_idx].append(scale_logit)
+    
     final_preds = {}
     for obj_id, data in all_preds.items():
         final_preds[obj_id] = {
             "label": data["label"],
-            "scale_logits": [np.mean(lst) for lst in data["logits"]],
+            "scale_logits": [np.mean(lst) for lst in data["scale_logits"]],
         }
-
+    
     ids = sorted(list(final_preds.keys()))
     y_true = np.array([final_preds[i]["label"] for i in ids])
     seed_tta_logits = []
@@ -554,30 +574,42 @@ def evaluate_diveshzz(checkpoint_path: str):
     model.eval()
     ds = DiveshzzDataset(str(divesh_path))
     loader = DataLoader(ds, batch_size=4, shuffle=False, num_workers=NUM_WORKERS)
-    all_preds = defaultdict(lambda: {"label": None, "logits": [[] for _ in TTA_SCALES]})
+    
+    all_preds = defaultdict(lambda: {"label": None, "scale_logits": [[] for _ in range(5)]})
     with torch.no_grad():
         for tensors, labels, ids in loader:
             tensors = tensors.to(DEVICE)
             B, num_tta, C, H, W = tensors.shape
             tensors = tensors.view(B * num_tta, C, H, W)
             logits = model(tensors).squeeze(-1).view(B, num_tta).cpu().float().numpy()
+            
             for i in range(B):
                 obj_id = ids[i]
                 all_preds[obj_id]["label"] = int(labels[i])
-                for s_idx in range(num_tta):
-                    all_preds[obj_id]["logits"][s_idx].append(logits[i, s_idx])
+                
+                # Group 50 TTA logits into 5 scales (10 per scale)
+                # TTA transforms are ordered: scale0: 0-9, scale1: 10-19, scale2: 20-29, scale3: 30-39, scale4: 40-49
+                for scale_idx in range(5):
+                    start_idx = scale_idx * 10
+                    end_idx = start_idx + 10
+                    scale_logit = np.mean(logits[i, start_idx:end_idx])
+                    all_preds[obj_id]["scale_logits"][scale_idx].append(scale_logit)
+    
     final_preds = {}
     for obj_id, data in all_preds.items():
         final_preds[obj_id] = {
             "label": data["label"],
-            "scale_logits": [np.mean(lst) for lst in data["logits"]],
+            "scale_logits": [np.mean(lst) for lst in data["scale_logits"]],
         }
+    
     ids = sorted(list(final_preds.keys()))
     y_true = np.array([final_preds[i]["label"] for i in ids])
+    
     seed_tta_logits = []
     for s_idx in range(5):
         s_logits = [final_preds[i]["scale_logits"][s_idx] for i in ids]
         seed_tta_logits.append(np.array(s_logits))
+    
     ensemble_logits = np.mean(seed_tta_logits, axis=0)
     metrics = compute_metrics(y_true, ensemble_logits)
     save_report(metrics, RESULTS_DIR / "diveshzz_focal_report.md", "Diveshzz Evaluation (Focal Loss)")
@@ -607,7 +639,8 @@ def evaluate_thyroid_pretraining(checkpoint_path: str):
     model.eval()
     ds = ThyroidPretrainingDataset(str(thyroid_path))
     loader = DataLoader(ds, batch_size=2, shuffle=False, num_workers=NUM_WORKERS)
-    all_preds = defaultdict(lambda: {"label": None, "logits": [[] for _ in TTA_SCALES]})
+    
+    all_preds = defaultdict(lambda: {"label": None, "scale_logits": [[] for _ in range(5)]})
     with torch.no_grad():
         for tensors, labels, pids in loader:
             tensors = tensors.to(DEVICE)
@@ -618,13 +651,18 @@ def evaluate_thyroid_pretraining(checkpoint_path: str):
                 pid = pids[i]
                 label = int(labels[i])
                 all_preds[pid]["label"] = label
-                for s_idx in range(num_tta):
-                    all_preds[pid]["logits"][s_idx].append(np.mean(logits[i, :, s_idx]))
+                
+                for scale_idx in range(5):
+                    start_idx = scale_idx * 10
+                    end_idx = start_idx + 10
+                    scale_logit = np.mean(logits[i, :, start_idx:end_idx])
+                    all_preds[pid]["scale_logits"][scale_idx].append(scale_logit)
+    
     final_preds = {}
     for pid, data in all_preds.items():
         final_preds[pid] = {
             "label": data["label"],
-            "scale_logits": [np.mean(lst) for lst in data["logits"]],
+            "scale_logits": [np.mean(lst) for lst in data["scale_logits"]],
         }
     ids = sorted(list(final_preds.keys()))
     y_true = np.array([final_preds[i]["label"] for i in ids])
