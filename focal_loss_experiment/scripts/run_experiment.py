@@ -538,14 +538,14 @@ def _run_sanity():
     print("=" * 70)
 
     # 1. Focal loss unit tests
-    print("\n[1/6] Running focal loss unit tests...")
+    print("\n[1/7] Running focal loss unit tests...")
     ok = test_focal_loss()
     if not ok:
         print("Focal loss unit tests FAILED — aborting.")
         raise SystemExit(1)
 
     # 2. Model initialization
-    print("\n[2/6] Model initialization...")
+    print("\n[2/7] Model initialization...")
     model = MultiLevelSwin(dropout=0.3).to(DEVICE)
     n_params = sum(p.numel() for p in model.parameters())
     n_trainable = sum(p.numel() for p in model.parameters() if p.requires_grad)
@@ -556,14 +556,14 @@ def _run_sanity():
     print(f"  Forward output shape: {out.shape} [OK]")
 
     # 3. Freeze schedule
-    print("\n[3/6] Freeze schedule...")
+    print("\n[3/7] Freeze schedule...")
     for ep in [1, 5, 6, 9, 10, 25]:
         model.freeze_epoch(ep)
         n_tr = sum(1 for p in model.parameters() if p.requires_grad)
         print(f"  Epoch {ep}: trainable params={n_tr}")
 
     # 4. Dataset loading
-    print("\n[4/6] Dataset loading...")
+    print("\n[4/7] Dataset loading...")
     train_t = make_train_transform()
     tn_ds = TN5000Dataset(str(TN5000_ROOT), str(TN5000_ROOT / "ImageSets" / "Main" / "train.txt"), train_t)
     au_ds = AUITDDataset(str(AUITD_ROOT), train_t)
