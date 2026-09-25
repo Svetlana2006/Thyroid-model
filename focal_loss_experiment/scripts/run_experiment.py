@@ -235,14 +235,17 @@ class ThyroidPretrainingDataset(Dataset):
     def __init__(self, data_root: str):
         self.patients = defaultdict(list)
         dataset_dir = Path(data_root)
-        for class_name in ["benign", "malignant"]:
-            class_dir = dataset_dir / class_name
+        # Kaggle dataset structure: classifiy/augtrain/0 (benign) and classifiy/augtrain/1 (malignant)
+        class_dirs = [
+            (dataset_dir / "classifiy" / "augtrain" / "0", 0),
+            (dataset_dir / "classifiy" / "augtrain" / "1", 1),
+        ]
+        for class_dir, label in class_dirs:
             if not class_dir.exists():
                 continue
-            label = 0 if class_name == "benign" else 1
             for root, _, files in os.walk(class_dir):
                 for file in files:
-                    if file.lower().endswith(('.jpg', '.jpeg', '.png')):
+                    if file.lower().endswith(('.jpg', '.jpeg', '.png', '.bmp')):
                         img_path = os.path.join(root, file)
                         pid = Path(img_path).stem.split('_')[0]
                         self.patients[pid].append({"img_path": img_path, "label": label})
