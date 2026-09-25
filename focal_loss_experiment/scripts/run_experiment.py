@@ -532,6 +532,113 @@ def evaluate_tn5000(checkpoint_path: str):
     return metrics
 
 
+def evaluate_diveshzz(checkpoint_path: str):
+    print("=" * 70)
+    print("EVALUATING ON DIVESHZZ")
+    print("=" * 70)
+    divesh_path = ROOT / "data_raw" / "divesh"
+    if not divesh_path.exists():
+        try:
+            import kagglehub
+            divesh_path = Path(kagglehub.dataset_download('diveshzz/thyroid-cancer-classification-ultrasound-dataset'))
+        except Exception as e:
+            print(f"  Diveshzz dataset not found and kagglehub download failed: {e}")
+            return None
+    if not divesh_path.exists():
+        print(f"  Diveshzz dataset not found at {divesh_path}")
+        return None
+    print(f"  Using Diveshzz path: {divesh_path}")
+    model = MultiLevelSwin(dropout=0.0).to(DEVICE)
+    ckpt = torch.load(checkpoint_path, map_location=DEVICE, weights_only=False)
+    model.load_state_dict(ckpt["model_state_dict"])
+    model.eval()
+    ds = DiveshzzDataset(str(divesh_path))
+    loader = DataLoader(ds, batch_size=4, shuffle=False, num_workers=NUM_WORKERS)
+    all_preds = defaultdict(lambda: {"label": None, "logits": [[] for _ in TTA_SCALES]})
+    with torch.no_grad():
+        for tensors, labels, ids in loader:
+            tensors = tensors.to(DEVICE)
+            B, num_tta, C, H, W = tensors.shape
+            tensors = tensors.view(B * num_tta, C, H, W)
+            logits = model(tensors).squeeze(-1).view(B, num_tta).cpu().float().numpy()
+            for i in range(B):
+                obj_id = ids[i]
+                all_preds[obj_id]["label"] = int(labels[i])
+                for s_idx in range(num_tta):
+                    all_preds[obj_id]["logits"][s_idx].append(logits[i, s_idx])
+    final_preds = {}
+    for obj_id, data in all_preds.items():
+        final_preds[obj_id] = {
+            "label": data["label"],
+            "scale_logits": [np.mean(lst) for lst in data["logits"]],
+        }
+    ids = sorted(list(final_preds.keys()))
+    y_true = np.array([final_preds[i]["label"] for i in ids])
+    seed_tta_logits = []
+    for s_idx in range(5):
+        s_logits = [final_preds[i]["scale_logits"][s_idx] for i in ids]
+        seed_tta_logits.append(np.array(s_logits))
+    ensemble_logits = np.mean(seed_tta_logits, axis=0)
+    metrics = compute_metrics(y_true, ensemble_logits)
+    save_report(metrics, RESULTS_DIR / "diveshzz_focal_report.md", "Diveshzz Evaluation (Focal Loss)")
+    print(f"Diveshzz AUROC: {metrics['AUROC']:.4f}")
+    return metrics
+
+
+def evaluate_thyroid_pretraining(checkpoint_path: str):
+    print("=" * 70)
+    print("EVALUATING ON THYROID FOR PRETRAINING")
+    print("=" * 70)
+    thyroid_path = ROOT / "data_raw" / "Thyroid_for_Pretraining"
+    if not thyroid_path.exists():
+        try:
+            import kagglehub
+            thyroid_path = Path(kagglehub.dataset_download('tingzen/thyroid-for-pretraining'))
+        except Exception as e:
+            print(f"  Thyroid for Pretraining not found and kagglehub download failed: {e}")
+            return None
+    if not thyroid_path.exists():
+        print(f"  Thyroid for Pretraining dataset not found at {thyroid_path}")
+        return None
+    print(f"  Using Thyroid for Pretraining path: {thyroid_path}")
+    model = MultiLevelSwin(dropout=0.0).to(DEVICE)
+    ckpt = torch.load(checkpoint_path, map_location=DEVICE, weights_only=False)
+    model.load_state_dict(ckpt["model_state_dict"])
+    model.eval()
+    ds = ThyroidPretrainingDataset(str(thyroid_path))
+    loader = DataLoader(ds, batch_size=2, shuffle=False, num_workers=NUM_WORKERS)
+    all_preds = defaultdict(lambda: {"label": None, "logits": [[] for _ in TTA_SCALES]})
+    with torch.no_grad():
+        for tensors, labels, pids in loader:
+            tensors = tensors.to(DEVICE)
+            B, num_imgs, num_tta, C, H, W = tensors.shape
+            tensors = tensors.view(B * num_imgs * num_tta, C, H, W)
+            logits = model(tensors).squeeze(-1).view(B, num_imgs, num_tta).cpu().float().numpy()
+            for i in range(B):
+                pid = pids[i]
+                label = int(labels[i])
+                all_preds[pid]["label"] = label
+                for s_idx in range(num_tta):
+                    all_preds[pid]["logits"][s_idx].append(np.mean(logits[i, :, s_idx]))
+    final_preds = {}
+    for pid, data in all_preds.items():
+        final_preds[pid] = {
+            "label": data["label"],
+            "scale_logits": [np.mean(lst) for lst in data["logits"]],
+        }
+    ids = sorted(list(final_preds.keys()))
+    y_true = np.array([final_preds[i]["label"] for i in ids])
+    seed_tta_logits = []
+    for s_idx in range(5):
+        s_logits = [final_preds[i]["scale_logits"][s_idx] for i in ids]
+        seed_tta_logits.append(np.array(s_logits))
+    ensemble_logits = np.mean(seed_tta_logits, axis=0)
+    metrics = compute_metrics(y_true, ensemble_logits)
+    save_report(metrics, RESULTS_DIR / "thyroid_pretraining_focal_report.md", "Thyroid for Pretraining Evaluation (Focal Loss)")
+    print(f"Thyroid Pretraining AUROC: {metrics['AUROC']:.4f}")
+    return metrics
+
+
 def _run_sanity():
     print("=" * 70)
     print("FOCAL LOSS EXPERIMENT — SANITY CHECKS")
@@ -577,7 +684,7 @@ def _run_sanity():
     print(f"  TN5000 test: {len(test_ds)}")
 
     # 5. TTA transforms
-    print("\n[5/6] TTA transforms...")
+    print("\n[5/7] TTA transforms...")
     print(f"  TTA scales: {TTA_SCALES}")
     print(f"  Total TTA transforms: {len(TTA_TRANSFORMS)}")
     sample_id = test_ds[0][2]  # __getitem__ returns (tensors, label, id)
@@ -588,7 +695,7 @@ def _run_sanity():
     print(f"  TTA tensor shape: {tensors.shape} [OK]")
 
     # 6. External datasets
-    print("\n[6/6] External datasets...")
+    print("\n[6/7] External datasets...")
     divesh_path = ROOT / "data_raw" / "divesh"
     if divesh_path.exists():
         divesh_ds = DiveshzzDataset(str(divesh_path))
@@ -618,6 +725,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("command", nargs="?", choices=["sanity", "train", "eval", "all"], default="all")
     parser.add_argument("--checkpoint", type=str, default=None)
+    parser.add_argument("--dataset", type=str, choices=["tn5000", "diveshzz", "thyroid", "all"], default="all")
     args = parser.parse_args()
     if args.command == "sanity":
         _run_sanity()
@@ -625,7 +733,15 @@ if __name__ == "__main__":
         train_seed0()
     elif args.command == "eval":
         ckpt = args.checkpoint or str(SEED0_DIR / "focal_best.pt")
-        evaluate_tn5000(ckpt)
+        if args.dataset in ["tn5000", "all"]:
+            evaluate_tn5000(ckpt)
+        if args.dataset in ["diveshzz", "all"]:
+            evaluate_diveshzz(ckpt)
+        if args.dataset in ["thyroid", "all"]:
+            evaluate_thyroid_pretraining(ckpt)
     elif args.command == "all":
         train_seed0()
-        evaluate_tn5000(str(SEED0_DIR / "focal_best.pt"))
+        best_ckpt = str(SEED0_DIR / "focal_best.pt")
+        evaluate_tn5000(best_ckpt)
+        evaluate_diveshzz(best_ckpt)
+        evaluate_thyroid_pretraining(best_ckpt)
