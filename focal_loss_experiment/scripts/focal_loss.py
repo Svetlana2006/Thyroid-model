@@ -50,8 +50,8 @@ class BinaryFocalLoss(nn.Module):
         # Sigmoid probability for the positive class
         p = torch.sigmoid(logits)
 
-        # p_t = p if target==1 else 1-p
-        p_t = torch.where(targets_smooth == 1, p, 1.0 - p)
+        # p_t = p if target==1 else 1-p (use original targets, not smoothed)
+        p_t = torch.where(targets == 1, p, 1.0 - p)
 
         # Focal modulation factor: (1 - p_t)^gamma
         focal_factor = (1.0 - p_t) ** self.gamma
@@ -61,7 +61,7 @@ class BinaryFocalLoss(nn.Module):
 
         # Positive-class weighting: alpha = pos_weight for pos, 1.0 for neg
         # This matches BCEWithLogitsLoss pos_weight semantics
-        pos_mask = (targets_smooth > 0.5).float()
+        pos_mask = (targets > 0.5).float()
         neg_mask = 1.0 - pos_mask
         alpha = pos_mask * self._pos_weight.to(logits.device) + neg_mask * 1.0
 

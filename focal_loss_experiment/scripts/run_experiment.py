@@ -297,7 +297,19 @@ def get_bootstrap_ci(y_true, y_pred, n_bootstraps=1000, ci=95):
 def compute_metrics(y_true, logits, threshold=THRESHOLD):
     probs = _expit(logits)
     preds = (probs >= threshold).astype(int)
-    tn, fp, fn, tp = confusion_matrix(y_true, preds).ravel()
+    cm = confusion_matrix(y_true, preds)
+    if cm.shape == (2, 2):
+        tn, fp, fn, tp = cm.ravel()
+    else:
+        # Handle edge case: all predictions same class
+        if len(np.unique(preds)) == 1:
+            if preds[0] == 1:
+                tp, fp, fn, tn = len(y_true), 0, 0, 0
+            else:
+                tn, fn, fp, tp = len(y_true), 0, 0, 0
+        else:
+            # Fallback: just use zeros
+            tn = fp = fn = tp = 0
     ci_low, ci_high = get_bootstrap_ci(y_true, logits)
     return {
         "N": len(y_true), "Benign": int(np.sum(y_true == 0)), "Malignant": int(np.sum(y_true == 1)),
