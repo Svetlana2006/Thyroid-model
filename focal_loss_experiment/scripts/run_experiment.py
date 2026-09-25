@@ -616,7 +616,7 @@ def _run_sanity():
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("command", choices=["sanity", "train", "eval", "all"], default="all")
+    parser.add_argument("command", nargs="?", choices=["sanity", "train", "eval", "all"], default="all")
     parser.add_argument("--checkpoint", type=str, default=None)
     args = parser.parse_args()
     if args.command == "sanity":
