@@ -455,9 +455,9 @@ def save_report(metrics, output_path: Path, title: str):
     output_path.write_text(report, encoding="utf-8")
 
 
-def train_seed0():
+def train_seed(seed: int = 0):
     print("=" * 70)
-    print("FOCAL LOSS EXPERIMENT V2 - SEED 0 TRAINING")
+    print(f"FOCAL LOSS EXPERIMENT V2 - SEED {seed} TRAINING")
     print("=" * 70)
     print("CONFIGURED TO MATCH MAIN MODEL TRAINING PIPELINE:")
     print("  Architecture: MultiLevelSwin with bias=False projections")
@@ -465,18 +465,18 @@ def train_seed0():
     print("  All other settings matched to train.py and src/trainer.py")
     print("=" * 70)
 
-    # Use clean checkpoint directory to avoid contamination from previous runs
-    CLEAN_SEED0_DIR = SEED0_DIR.parent / "seed0_clean"
-    CLEAN_SEED0_DIR.mkdir(parents=True, exist_ok=True)
+    # Per-seed clean checkpoint directory (seed0_clean, seed1_clean, ...)
+    clean_dir = EXP_DIR / f"seed{seed}_clean"
+    clean_dir.mkdir(parents=True, exist_ok=True)
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
     LOG_DIR.mkdir(parents=True, exist_ok=True)
 
     # Same seed setting as main model (train.py set_seed)
-    set_seed(0)
-    print(f"Seed: 0")
-    print(f"Python seed: 0")
-    print(f"NumPy seed: 0")
-    print(f"Torch seed: 0")
+    set_seed(seed)
+    print(f"Seed: {seed}")
+    print(f"Python seed: {seed}")
+    print(f"NumPy seed: {seed}")
+    print(f"Torch seed: {seed}")
 
     # Dataset preparation matching main model train.py
     tn_ds = TN5000Dataset(str(TN5000_ROOT), str(TN5000_ROOT / "ImageSets" / "Main" / "train.txt"), make_train_transform())
@@ -554,9 +554,9 @@ def train_seed0():
     val_ds = TN5000Dataset(str(TN5000_ROOT), str(TN5000_ROOT / "ImageSets" / "Main" / "val.txt"), make_val_transform())
     val_loader = DataLoader(val_ds, batch_size=BATCH_SIZE * 2, shuffle=False, num_workers=NUM_WORKERS, pin_memory=USE_AMP)
 
-    # Checkpoint paths (clean directory)
-    last_ckpt = CLEAN_SEED0_DIR / "focal_last.pt"
-    best_ckpt = CLEAN_SEED0_DIR / "focal_best.pt"
+    # Checkpoint paths (per-seed clean directory)
+    last_ckpt = clean_dir / "focal_last.pt"
+    best_ckpt = clean_dir / "focal_best.pt"
     history = {"train_loss": [], "train_auc": [], "val_loss": [], "val_auc": []}
     start_epoch = 1
     best_val_auc = -1e9
@@ -630,7 +630,20 @@ def train_seed0():
                 print(f"  [WARNING] Config mismatch: {key} = {ckpt_config.get(key)}, expected {expected}. Starting fresh.")
                 mismatch = True
         if mismatch:
-            pass  # Will start fresh
+            # Config incompatible — discard checkpoint and start fresh.
+            # Must explicitly initialize optimizer/scheduler/scaler here;
+            # the outer else-branch (fresh start) is only reached when no
+            # checkpoint exists at all, so without this we'd get a NameError.
+            start_epoch = 1
+            history = {"train_loss": [], "train_auc": [], "val_loss": [], "val_auc": []}
+            early_stopping = EarlyStopping(patience=patience, min_delta=min_delta)
+            model.freeze_epoch(1)
+            _prev_trainable = sum(1 for p in model.parameters() if p.requires_grad)
+            optimizer, scheduler = build_optimizer_and_scheduler(
+                model, LR_HEAD, LR_HEAD * 0.1, 1e-4, WARMUP_EPOCHS, 2, last_epoch=-1
+            )
+            scaler = torch.cuda.amp.GradScaler(enabled=USE_AMP)
+            print(f"  Starting fresh (config mismatch).")
         else:
             saved_epoch = ckpt["epoch"]
             # Handle completed checkpoint (epoch >= EPOCHS)
@@ -647,7 +660,7 @@ def train_seed0():
                 best_val_auc = early_stopping.best_score
                 print(f"  Training already complete at epoch {saved_epoch}. Best val AUC = {best_val_auc:.4f}")
                 summary = {"best_val_auc": best_val_auc, "epochs_trained": len(history["val_auc"]), "history": history, "config": config}
-                with open(CLEAN_SEED0_DIR / "focal_summary.json", "w") as f:
+                with open(clean_dir / "focal_summary.json", "w") as f:
                     json.dump(summary, f, indent=2)
                 print("=" * 70)
                 print(f"Training complete (restored from completed checkpoint). Best val AUC: {best_val_auc:.4f}")
@@ -721,7 +734,7 @@ def train_seed0():
         all_logits, all_labels = [], []
         t0 = time.time()
         
-        iterator = tqdm(train_loader, desc=f"Training seed0", leave=False) if HAS_TQDM else train_loader
+        iterator = tqdm(train_loader, desc=f"Training seed{seed}", leave=False) if HAS_TQDM else train_loader
         for images, labels in iterator:
             images = images.to(DEVICE, non_blocking=True)
             labels = labels.to(DEVICE, non_blocking=True)
@@ -847,7 +860,7 @@ def train_seed0():
     history["best_val_auc"] = early_stopping.best_score
 
     summary = {"best_val_auc": early_stopping.best_score, "epochs_trained": len(history["val_auc"]), "history": history, "config": config}
-    with open(CLEAN_SEED0_DIR / "focal_summary.json", "w") as f:
+    with open(clean_dir / "focal_summary.json", "w") as f:
         json.dump(summary, f, indent=2)
 
     print("=" * 70)
@@ -858,7 +871,7 @@ def train_seed0():
     return summary
 
 
-def evaluate_tn5000(checkpoint_path: str):
+def evaluate_tn5000(checkpoint_path: str, out_dir: Path = None):
     print("=" * 70)
     print("EVALUATING ON TN5000")
     print("=" * 70)
@@ -898,12 +911,16 @@ def evaluate_tn5000(checkpoint_path: str):
         scale_tta_logits.append(np.array(s_logits))
     ensemble_logits = np.mean(scale_tta_logits, axis=0)
     metrics = compute_metrics(y_true, ensemble_logits)
-    save_report(metrics, RESULTS_DIR / "tn5000_focal_report.md", "TN5000 Evaluation (Focal Loss V2)")
+    _out = out_dir or RESULTS_DIR
+    _out.mkdir(parents=True, exist_ok=True)
+    save_report(metrics, _out / "tn5000_focal_report.md", "TN5000 Evaluation (Focal Loss V2)")
+    with open(_out / "tn5000_focal_metrics.json", "w") as f:
+        json.dump({k: (v if isinstance(v, (str, int, bool)) else float(v)) for k, v in metrics.items()}, f, indent=2)
     print(f"TN5000 AUROC: {metrics['AUROC']:.4f}")
     return metrics
 
 
-def evaluate_diveshzz(checkpoint_path: str):
+def evaluate_diveshzz(checkpoint_path: str, out_dir: Path = None):
     print("=" * 70)
     print("EVALUATING ON DIVESHZZ")
     print("=" * 70)
@@ -951,12 +968,16 @@ def evaluate_diveshzz(checkpoint_path: str):
     
     ensemble_logits = np.mean(scale_tta_logits, axis=0)
     metrics = compute_metrics(y_true, ensemble_logits)
-    save_report(metrics, RESULTS_DIR / "diveshzz_focal_report.md", "Diveshzz Evaluation (Focal Loss V2)")
+    _out = out_dir or RESULTS_DIR
+    _out.mkdir(parents=True, exist_ok=True)
+    save_report(metrics, _out / "diveshzz_focal_report.md", "Diveshzz Evaluation (Focal Loss V2)")
+    with open(_out / "diveshzz_focal_metrics.json", "w") as f:
+        json.dump({k: (v if isinstance(v, (str, int, bool)) else float(v)) for k, v in metrics.items()}, f, indent=2)
     print(f"Diveshzz AUROC: {metrics['AUROC']:.4f}")
     return metrics
 
 
-def evaluate_thyroid_pretraining(checkpoint_path: str):
+def evaluate_thyroid_pretraining(checkpoint_path: str, out_dir: Path = None):
     print("=" * 70)
     print("EVALUATING ON THYROID FOR PRETRAINING")
     print("=" * 70)
@@ -1029,7 +1050,11 @@ def evaluate_thyroid_pretraining(checkpoint_path: str):
     
     ensemble_logits = np.mean(scale_tta_logits, axis=0)
     metrics = compute_metrics(y_true, ensemble_logits)
-    save_report(metrics, RESULTS_DIR / "thyroid_pretraining_focal_report.md", "Thyroid for Pretraining Evaluation (Focal Loss V2)")
+    _out = out_dir or RESULTS_DIR
+    _out.mkdir(parents=True, exist_ok=True)
+    save_report(metrics, _out / "thyroid_pretraining_focal_report.md", "Thyroid for Pretraining Evaluation (Focal Loss V2)")
+    with open(_out / "thyroid_pretraining_focal_metrics.json", "w") as f:
+        json.dump({k: (v if isinstance(v, (str, int, bool)) else float(v)) for k, v in metrics.items()}, f, indent=2)
     print(f"Thyroid Pretraining AUROC: {metrics['AUROC']:.4f}")
     return metrics
 
@@ -1116,27 +1141,110 @@ def _run_sanity():
     return True
 
 
+def aggregate_results(seeds=None):
+    """
+    Read per-seed eval JSON files and report mean ± std AUROC across seeds.
+    Reads from results/seed{N}/ for N in seeds.
+    """
+    if seeds is None:
+        seeds = list(range(5))
+    print("=" * 70)
+    print("FOCAL LOSS V2 — MULTI-SEED AGGREGATE RESULTS")
+    print(f"  Seeds: {seeds}")
+    print("=" * 70)
+
+    datasets = [
+        ("TN5000",              "tn5000_focal_metrics.json"),
+        ("Diveshzz",            "diveshzz_focal_metrics.json"),
+        ("Thyroid Pretraining", "thyroid_pretraining_focal_metrics.json"),
+    ]
+    aggregate = {}
+    for ds_name, fname in datasets:
+        aurocs = []
+        for s in seeds:
+            p = RESULTS_DIR / f"seed{s}" / fname
+            if p.exists():
+                with open(p) as f:
+                    m = json.load(f)
+                aurocs.append(m["AUROC"])
+            else:
+                print(f"  [MISSING] seed{s} / {ds_name}: {p}")
+        if aurocs:
+            mean_auc = float(np.mean(aurocs))
+            std_auc  = float(np.std(aurocs))
+            vals_str = ", ".join(f"{a:.4f}" for a in aurocs)
+            print(f"  {ds_name}: AUROC = {mean_auc:.4f} \u00b1 {std_auc:.4f}  "
+                  f"(n={len(aurocs)}, seeds=[{vals_str}])")
+            aggregate[ds_name] = {"seeds": list(zip(seeds[:len(aurocs)], aurocs)),
+                                   "mean": mean_auc, "std": std_auc, "n": len(aurocs)}
+        else:
+            print(f"  {ds_name}: no seed results found.")
+
+    if aggregate:
+        out_path = RESULTS_DIR / "focal_aggregate_summary.json"
+        with open(out_path, "w") as f:
+            json.dump(aggregate, f, indent=2)
+        print(f"\n  Saved aggregate summary -> {out_path}")
+    print("=" * 70)
+    return aggregate
+
+
+# Backward-compatible alias kept for any external scripts that call train_seed0().
+train_seed0 = lambda: train_seed(0)
+
+
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument("command", nargs="?", choices=["sanity", "train", "eval", "all"], default="all")
-    parser.add_argument("--checkpoint", type=str, default=None)
-    parser.add_argument("--dataset", type=str, choices=["tn5000", "diveshzz", "thyroid", "all"], default="all")
+    parser = argparse.ArgumentParser(description="Focal Loss V2 Experiment (multi-seed)")
+    parser.add_argument(
+        "command", nargs="?",
+        choices=["sanity", "train", "eval", "all", "aggregate"],
+        default="all",
+    )
+    parser.add_argument(
+        "--seed", type=int, default=None,
+        help="Seed index to run (0-4). Omit to run all 5 seeds.",
+    )
+    parser.add_argument(
+        "--checkpoint", type=str, default=None,
+        help="Explicit checkpoint path (only used with eval + single --seed).",
+    )
+    parser.add_argument(
+        "--dataset", type=str,
+        choices=["tn5000", "diveshzz", "thyroid", "all"], default="all",
+    )
     args = parser.parse_args()
+
+    seeds = [args.seed] if args.seed is not None else list(range(5))
+
     if args.command == "sanity":
         _run_sanity()
+
     elif args.command == "train":
-        train_seed0()
+        for s in seeds:
+            train_seed(s)
+
     elif args.command == "eval":
-        ckpt = args.checkpoint or str(CLEAN_SEED0_DIR / "focal_best.pt")
-        if args.dataset in ["tn5000", "all"]:
-            evaluate_tn5000(ckpt)
-        if args.dataset in ["diveshzz", "all"]:
-            evaluate_diveshzz(ckpt)
-        if args.dataset in ["thyroid", "all"]:
-            evaluate_thyroid_pretraining(ckpt)
+        for s in seeds:
+            seed_ckpt_dir = EXP_DIR / f"seed{s}_clean"
+            ckpt = args.checkpoint or str(seed_ckpt_dir / "focal_best.pt")
+            out_dir = RESULTS_DIR / f"seed{s}"
+            if args.dataset in ["tn5000", "all"]:
+                evaluate_tn5000(ckpt, out_dir)
+            if args.dataset in ["diveshzz", "all"]:
+                evaluate_diveshzz(ckpt, out_dir)
+            if args.dataset in ["thyroid", "all"]:
+                evaluate_thyroid_pretraining(ckpt, out_dir)
+
     elif args.command == "all":
-        train_seed0()
-        best_ckpt = str(CLEAN_SEED0_DIR / "focal_best.pt")
-        evaluate_tn5000(best_ckpt)
-        evaluate_diveshzz(best_ckpt)
-        evaluate_thyroid_pretraining(best_ckpt)
+        for s in seeds:
+            train_seed(s)
+            seed_ckpt_dir = EXP_DIR / f"seed{s}_clean"
+            ckpt = str(seed_ckpt_dir / "focal_best.pt")
+            out_dir = RESULTS_DIR / f"seed{s}"
+            evaluate_tn5000(ckpt, out_dir)
+            evaluate_diveshzz(ckpt, out_dir)
+            evaluate_thyroid_pretraining(ckpt, out_dir)
+        aggregate_results(list(range(5)))
+
+    elif args.command == "aggregate":
+        aggregate_results(seeds)
