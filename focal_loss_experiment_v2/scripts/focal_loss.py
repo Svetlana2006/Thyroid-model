@@ -20,6 +20,7 @@ Key design decisions:
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import numpy as np
 
 
 class BinaryFocalLoss(nn.Module):
@@ -57,7 +58,8 @@ class BinaryFocalLoss(nn.Module):
     def forward(self, logits: torch.Tensor, targets: torch.Tensor) -> torch.Tensor:
         targets = targets.to(logits.dtype)
 
-        # 1. Label smoothing — same as BCEWithLogitsLoss path in trainer.py:94
+        # 1. Apply the same manual label-smoothing transformation used by the main-model training path.
+        #    This is NOT done by BCEWithLogitsLoss internally.
         targets_smooth = targets * (1.0 - self.label_smooth_eps) + 0.5 * self.label_smooth_eps
 
         # 2. Per-example BCEWithLogitsLoss with correct pos_weight semantics
@@ -199,15 +201,20 @@ def test_focal_loss():
     check(loss_val.item() >= 0, f"Loss non-negative: {loss_val.item():.6f}")
 
     # ── Test 13: focal loss specifically down-weights easy examples ──
-    # This is the key test: easy examples should have focal/BCE ratio < 1
-    # hard examples should have focal/BCE ratio > 1
+    # This is the key test: easy examples should have focal/BCE ratio << 1
+    # hard examples should have focal/BCE ratio close to 1 (not down-weighted)
     easy_logits = torch.tensor([5.0], device=device)  # easy, high confidence
     hard_logits = torch.tensor([-3.0], device=device)  # hard, low confidence
     easy_targets = torch.tensor([1.0], device=device)
     hard_targets = torch.tensor([1.0], device=device)
     
-    bce_easy = F.softplus(-easy_logits) * 0.95 + F.softplus(easy_logits) * 0.05
-    bce_hard = F.softplus(-hard_logits) * 0.95 + F.softplus(hard_logits) * 0.05
+    # Calculate BCE using the same formula as in the loss function
+    def _compute_bce(logits, targets, eps=0.0):
+        targets_smooth = targets * (1.0 - eps) + 0.5 * eps
+        return float(F.softplus(-logits) * targets_smooth + F.softplus(logits) * (1.0 - targets_smooth))
+    
+    bce_easy = _compute_bce(easy_logits, easy_targets, 0.0)
+    bce_hard = _compute_bce(hard_logits, hard_targets, 0.0)
     
     fl_fn = BinaryFocalLoss(gamma=2.0, pos_weight=1.0, label_smooth_eps=0.0)
     focal_easy = fl_fn(easy_logits, easy_targets).item()
@@ -215,9 +222,8 @@ def test_focal_loss():
     
     ratio_easy = focal_easy / (bce_easy + 1e-8)
     ratio_hard = focal_hard / (bce_hard + 1e-8)
-    
-    check(ratio_easy < 0.5, f"Easy example ratio {ratio_easy:.6f} < 0.5 (should be << 1)")
-    check(ratio_hard > 1.5, f"Hard example ratio {ratio_hard:.6f} > 1.5 (should be > 1)")
+    check(ratio_easy < 0.1, f"Easy example ratio {ratio_easy:.6f} < 0.1 (should be << 1)")
+    check(ratio_hard > 0.8 and ratio_hard < 1.2, f"Hard example ratio {ratio_hard:.6f} close to 1 (should be ~1)")
 
     # ── Test 14: label smoothing has no effect when eps=0 ───────
     loss_fn_e0 = BinaryFocalLoss(gamma=2.0, pos_weight=1.0, label_smooth_eps=0.0)
@@ -228,6 +234,124 @@ def test_focal_loss():
     l05 = loss_fn_e05(logits, targets).item()
     check(l05 > l0, f"label_smooth_eps=0.05 > 0: smooth={l05:.6f} > no_smooth={l0:.6f}")
 
+    # ── Test 15: gamma=0 EQUIVALENCE with BCEWithLogitsLoss ───────────
+    # This is the CRITICAL test: FocalLoss(gamma=0, pos_weight=w, eps=sm)
+    # must numerically equal BCEWithLogitsLoss(pos_weight=w) with manually smoothed targets
+    print("\n  [GAMMA=0 EQUIVALENCE TEST]")
+    pos_w = 2.5
+    eps = 0.05
+    fl_gamma0 = BinaryFocalLoss(gamma=0.0, pos_weight=pos_w, label_smooth_eps=eps)
+    
+    test_cases = [
+        ("positive easy", torch.tensor([5.0]), torch.tensor([1.0])),
+        ("positive hard", torch.tensor([-3.0]), torch.tensor([1.0])),
+        ("negative easy", torch.tensor([-5.0]), torch.tensor([0.0])),
+        ("negative hard", torch.tensor([3.0]), torch.tensor([0.0])),
+        ("logit zero target pos", torch.tensor([0.0]), torch.tensor([1.0])),
+        ("logit zero target neg", torch.tensor([0.0]), torch.tensor([0.0])),
+        ("large positive", torch.tensor([20.0]), torch.tensor([1.0])),
+        ("large negative", torch.tensor([-20.0]), torch.tensor([1.0])),
+        ("small pos logit", torch.tensor([0.01]), torch.tensor([1.0])),
+        ("small neg logit", torch.tensor([-0.01]), torch.tensor([0.0])),
+    ]
+    
+    all_equiv = True
+    for name, logit, target in test_cases:
+        fl_loss = fl_gamma0(logit, target).item()
+        # Reference: BCEWithLogitsLoss with same pos_weight
+        # Labels are manually smoothed (same as src/trainer.py), then passed to BCEWithLogitsLoss
+        # pos_weight in BCEWithLogitsLoss applies to positive class term
+        targets_smooth = target * (1.0 - eps) + 0.5 * eps
+        pw_tensor = torch.tensor([pos_w])
+        bce_loss = F.binary_cross_entropy_with_logits(logit, targets_smooth, pos_weight=pw_tensor).item()
+        abs_err = abs(fl_loss - bce_loss)
+        rel_err = abs_err / (abs(bce_loss) + 1e-8)
+        passed = abs_err < 1e-5
+        all_equiv = all_equiv and passed
+        status = "PASS" if passed else "FAIL"
+        print(f"    [{status}] {name}: FL={fl_loss:.8f}, BCE={bce_loss:.8f}, "
+              f"abs_err={abs_err:.2e}, rel_err={rel_err:.2e}")
+    
+    check(all_equiv, f"All gamma=0 equivalence tests passed: {all_equiv}")
+    
+    # ── Test 16: gamma=0 equivalence with random batch ────────────
+    torch.manual_seed(42)
+    np.random.seed(42)
+    rand_logits = torch.randn(32, device=device) * 4 - 2
+    rand_targets = torch.randint(0, 2, (32,), device=device, dtype=torch.float32)
+    fl_batch = fl_gamma0(rand_logits, rand_targets).item()
+    ts = rand_targets * (1.0 - eps) + 0.5 * eps
+    pw_t = torch.tensor([pos_w])
+    bce_batch = F.binary_cross_entropy_with_logits(rand_logits, ts, pos_weight=pw_t).item()
+    batch_abs_err = abs(fl_batch - bce_batch)
+    batch_passed = batch_abs_err < 1e-5
+    check(batch_passed, f"Random batch gamma=0 equivalence: abs_err={batch_abs_err:.2e}")
+    
+    # ── Test 17: gamma=0 GRADIENT EQUIVALENCE ────────────────────
+    # For gamma=0, gradients should match BCEWithLogitsLoss gradients exactly
+    print("\n  [GAMMA=0 GRADIENT EQUIVALENCE TEST]")
+    grad_all_pass = True
+    grad_test_cases = [
+        ("mixed batch", torch.tensor([2.0, -1.5, 0.5, -3.0, 4.0], device=device, requires_grad=True),
+         torch.tensor([1.0, 0.0, 1.0, 1.0, 0.0], device=device)),
+        ("confident positive", torch.tensor([5.0], device=device, requires_grad=True),
+         torch.tensor([1.0], device=device)),
+        ("hard positive", torch.tensor([-2.0], device=device, requires_grad=True),
+         torch.tensor([1.0], device=device)),
+        ("confident negative", torch.tensor([-5.0], device=device, requires_grad=True),
+         torch.tensor([0.0], device=device)),
+        ("hard negative", torch.tensor([2.0], device=device, requires_grad=True),
+         torch.tensor([0.0], device=device)),
+    ]
+    
+    for name, logits_fl, targets_fl in grad_test_cases:
+        # Focal loss with gamma=0
+        logits_fl = logits_fl.clone().detach().requires_grad_(True)
+        fl_loss = fl_gamma0(logits_fl, targets_fl)
+        fl_loss.backward()
+        fl_grad = logits_fl.grad.clone()
+        
+        # BCEWithLogitsLoss with same settings
+        logits_bce = logits_fl.clone().detach().requires_grad_(True)
+        targets_smooth = targets_fl * (1.0 - eps) + 0.5 * eps
+        pw_tensor = torch.tensor([pos_w], device=device)
+        bce_loss = F.binary_cross_entropy_with_logits(logits_bce, targets_smooth, pos_weight=pw_tensor)
+        bce_loss.backward()
+        bce_grad = logits_bce.grad.clone()
+        
+        # Compare gradients
+        grad_diff = torch.abs(fl_grad - bce_grad).max().item()
+        grad_passed = grad_diff < 1e-6
+        grad_all_pass = grad_all_pass and grad_passed
+        status = "PASS" if grad_passed else "FAIL"
+        print(f"    [{status}] {name}: max_grad_diff={grad_diff:.2e}")
+    
+    # Test with different pos_weight values
+    for pw in [0.5, 1.0, 2.0, 5.0]:
+        fl_gamma0_pw = BinaryFocalLoss(gamma=0.0, pos_weight=pw, label_smooth_eps=eps)
+        logits_fl = torch.tensor([1.0, -1.0, 0.5, -0.5], device=device, requires_grad=True)
+        targets_fl = torch.tensor([1.0, 0.0, 1.0, 0.0], device=device)
+        
+        logits_fl = logits_fl.clone().detach().requires_grad_(True)
+        fl_loss = fl_gamma0_pw(logits_fl, targets_fl)
+        fl_loss.backward()
+        fl_grad = logits_fl.grad.clone()
+        
+        logits_bce = logits_fl.clone().detach().requires_grad_(True)
+        targets_smooth = targets_fl * (1.0 - eps) + 0.5 * eps
+        pw_tensor = torch.tensor([pw], device=device)
+        bce_loss = F.binary_cross_entropy_with_logits(logits_bce, targets_smooth, pos_weight=pw_tensor)
+        bce_loss.backward()
+        bce_grad = logits_bce.grad.clone()
+        
+        grad_diff = torch.abs(fl_grad - bce_grad).max().item()
+        grad_passed = grad_diff < 1e-6
+        grad_all_pass = grad_all_pass and grad_passed
+        status = "PASS" if grad_passed else "FAIL"
+        print(f"    [{status}] pos_weight={pw}: max_grad_diff={grad_diff:.2e}")
+    
+    check(grad_all_pass, f"All gamma=0 gradient equivalence tests passed: {grad_all_pass}")
+    
     print("=" * 60)
     print(f"OVERALL: {'ALL TESTS PASSED' if all_pass else 'SOME TESTS FAILED'}")
     print("=" * 60)

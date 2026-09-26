@@ -1,0 +1,2556 @@
+{
+  "baseline_source_files": [
+    "train.py",
+    "src/trainer.py",
+    "src/dataset.py",
+    "src/transforms.py",
+    "evaluate_internal_tn5000.py",
+    "outputs/final_model/seed0/config.json"
+  ],
+  "baseline_config": {
+    "config": "A4S1V2",
+    "ar": "A4",
+    "parameter_count": 27792891,
+    "best_val_auc": 0.9464,
+    "best_epoch": 23,
+    "tta_scales": [
+      0.7,
+      0.85,
+      1.0,
+      1.15,
+      1.3
+    ],
+    "pos_weight": 0.5291,
+    "label_smooth_eps": 0.05,
+    "lr_head": 0.0003,
+    "weight_decay": 0.0001,
+    "T_0": 10,
+    "T_mult": 2,
+    "patience": 10,
+    "threshold": 0.5912
+  },
+  "focal_config": {
+    "config": "A4S1V2 (focal)",
+    "loss": "BinaryFocalLoss(gamma=2.0)",
+    "parameter_count": 27792891,
+    "tta_scales": [
+      0.7,
+      0.85,
+      1.0,
+      1.15,
+      1.3
+    ],
+    "pos_weight": 0.5291,
+    "label_smooth_eps": 0.05,
+    "lr_head": 0.0003,
+    "weight_decay": 0.0001,
+    "T_0": 10,
+    "T_mult": 2,
+    "patience": 10,
+    "threshold": 0.5912
+  },
+  "training_transforms": {
+    "focal_transform_count": 9,
+    "baseline_transform_count": 9,
+    "focal_transform_types": [
+      "Rotate",
+      "HorizontalFlip",
+      "ColorJitter",
+      "LongestMaxSize",
+      "PadIfNeeded",
+      "RandomCrop",
+      "GaussianBlur",
+      "Normalize",
+      "ToTensorV2"
+    ],
+    "baseline_transform_types": [
+      "Rotate",
+      "HorizontalFlip",
+      "ColorJitter",
+      "LongestMaxSize",
+      "PadIfNeeded",
+      "RandomCrop",
+      "GaussianBlur",
+      "Normalize",
+      "ToTensorV2"
+    ],
+    "match": true
+  },
+  "validation_transforms": {
+    "focal_transform_count": 5,
+    "baseline_transform_count": 5,
+    "focal_transform_types": [
+      "LongestMaxSize",
+      "PadIfNeeded",
+      "CenterCrop",
+      "Normalize",
+      "ToTensorV2"
+    ],
+    "baseline_transform_types": [
+      "LongestMaxSize",
+      "PadIfNeeded",
+      "CenterCrop",
+      "Normalize",
+      "ToTensorV2"
+    ],
+    "match": true
+  },
+  "architecture": {
+    "focal_param_count": 27792891,
+    "main_param_count": 27792891,
+    "param_count_match": true,
+    "focal_keys": [
+      "backbone.layers.0.blocks.0.attn.proj.bias",
+      "backbone.layers.0.blocks.0.attn.proj.weight",
+      "backbone.layers.0.blocks.0.attn.qkv.bias",
+      "backbone.layers.0.blocks.0.attn.qkv.weight",
+      "backbone.layers.0.blocks.0.attn.relative_position_bias_table",
+      "backbone.layers.0.blocks.0.mlp.fc1.bias",
+      "backbone.layers.0.blocks.0.mlp.fc1.weight",
+      "backbone.layers.0.blocks.0.mlp.fc2.bias",
+      "backbone.layers.0.blocks.0.mlp.fc2.weight",
+      "backbone.layers.0.blocks.0.norm1.bias",
+      "backbone.layers.0.blocks.0.norm1.weight",
+      "backbone.layers.0.blocks.0.norm2.bias",
+      "backbone.layers.0.blocks.0.norm2.weight",
+      "backbone.layers.0.blocks.1.attn.proj.bias",
+      "backbone.layers.0.blocks.1.attn.proj.weight",
+      "backbone.layers.0.blocks.1.attn.qkv.bias",
+      "backbone.layers.0.blocks.1.attn.qkv.weight",
+      "backbone.layers.0.blocks.1.attn.relative_position_bias_table",
+      "backbone.layers.0.blocks.1.mlp.fc1.bias",
+      "backbone.layers.0.blocks.1.mlp.fc1.weight",
+      "backbone.layers.0.blocks.1.mlp.fc2.bias",
+      "backbone.layers.0.blocks.1.mlp.fc2.weight",
+      "backbone.layers.0.blocks.1.norm1.bias",
+      "backbone.layers.0.blocks.1.norm1.weight",
+      "backbone.layers.0.blocks.1.norm2.bias",
+      "backbone.layers.0.blocks.1.norm2.weight",
+      "backbone.layers.1.blocks.0.attn.proj.bias",
+      "backbone.layers.1.blocks.0.attn.proj.weight",
+      "backbone.layers.1.blocks.0.attn.qkv.bias",
+      "backbone.layers.1.blocks.0.attn.qkv.weight",
+      "backbone.layers.1.blocks.0.attn.relative_position_bias_table",
+      "backbone.layers.1.blocks.0.mlp.fc1.bias",
+      "backbone.layers.1.blocks.0.mlp.fc1.weight",
+      "backbone.layers.1.blocks.0.mlp.fc2.bias",
+      "backbone.layers.1.blocks.0.mlp.fc2.weight",
+      "backbone.layers.1.blocks.0.norm1.bias",
+      "backbone.layers.1.blocks.0.norm1.weight",
+      "backbone.layers.1.blocks.0.norm2.bias",
+      "backbone.layers.1.blocks.0.norm2.weight",
+      "backbone.layers.1.blocks.1.attn.proj.bias",
+      "backbone.layers.1.blocks.1.attn.proj.weight",
+      "backbone.layers.1.blocks.1.attn.qkv.bias",
+      "backbone.layers.1.blocks.1.attn.qkv.weight",
+      "backbone.layers.1.blocks.1.attn.relative_position_bias_table",
+      "backbone.layers.1.blocks.1.mlp.fc1.bias",
+      "backbone.layers.1.blocks.1.mlp.fc1.weight",
+      "backbone.layers.1.blocks.1.mlp.fc2.bias",
+      "backbone.layers.1.blocks.1.mlp.fc2.weight",
+      "backbone.layers.1.blocks.1.norm1.bias",
+      "backbone.layers.1.blocks.1.norm1.weight",
+      "backbone.layers.1.blocks.1.norm2.bias",
+      "backbone.layers.1.blocks.1.norm2.weight",
+      "backbone.layers.1.downsample.norm.bias",
+      "backbone.layers.1.downsample.norm.weight",
+      "backbone.layers.1.downsample.reduction.weight",
+      "backbone.layers.2.blocks.0.attn.proj.bias",
+      "backbone.layers.2.blocks.0.attn.proj.weight",
+      "backbone.layers.2.blocks.0.attn.qkv.bias",
+      "backbone.layers.2.blocks.0.attn.qkv.weight",
+      "backbone.layers.2.blocks.0.attn.relative_position_bias_table",
+      "backbone.layers.2.blocks.0.mlp.fc1.bias",
+      "backbone.layers.2.blocks.0.mlp.fc1.weight",
+      "backbone.layers.2.blocks.0.mlp.fc2.bias",
+      "backbone.layers.2.blocks.0.mlp.fc2.weight",
+      "backbone.layers.2.blocks.0.norm1.bias",
+      "backbone.layers.2.blocks.0.norm1.weight",
+      "backbone.layers.2.blocks.0.norm2.bias",
+      "backbone.layers.2.blocks.0.norm2.weight",
+      "backbone.layers.2.blocks.1.attn.proj.bias",
+      "backbone.layers.2.blocks.1.attn.proj.weight",
+      "backbone.layers.2.blocks.1.attn.qkv.bias",
+      "backbone.layers.2.blocks.1.attn.qkv.weight",
+      "backbone.layers.2.blocks.1.attn.relative_position_bias_table",
+      "backbone.layers.2.blocks.1.mlp.fc1.bias",
+      "backbone.layers.2.blocks.1.mlp.fc1.weight",
+      "backbone.layers.2.blocks.1.mlp.fc2.bias",
+      "backbone.layers.2.blocks.1.mlp.fc2.weight",
+      "backbone.layers.2.blocks.1.norm1.bias",
+      "backbone.layers.2.blocks.1.norm1.weight",
+      "backbone.layers.2.blocks.1.norm2.bias",
+      "backbone.layers.2.blocks.1.norm2.weight",
+      "backbone.layers.2.blocks.2.attn.proj.bias",
+      "backbone.layers.2.blocks.2.attn.proj.weight",
+      "backbone.layers.2.blocks.2.attn.qkv.bias",
+      "backbone.layers.2.blocks.2.attn.qkv.weight",
+      "backbone.layers.2.blocks.2.attn.relative_position_bias_table",
+      "backbone.layers.2.blocks.2.mlp.fc1.bias",
+      "backbone.layers.2.blocks.2.mlp.fc1.weight",
+      "backbone.layers.2.blocks.2.mlp.fc2.bias",
+      "backbone.layers.2.blocks.2.mlp.fc2.weight",
+      "backbone.layers.2.blocks.2.norm1.bias",
+      "backbone.layers.2.blocks.2.norm1.weight",
+      "backbone.layers.2.blocks.2.norm2.bias",
+      "backbone.layers.2.blocks.2.norm2.weight",
+      "backbone.layers.2.blocks.3.attn.proj.bias",
+      "backbone.layers.2.blocks.3.attn.proj.weight",
+      "backbone.layers.2.blocks.3.attn.qkv.bias",
+      "backbone.layers.2.blocks.3.attn.qkv.weight",
+      "backbone.layers.2.blocks.3.attn.relative_position_bias_table",
+      "backbone.layers.2.blocks.3.mlp.fc1.bias",
+      "backbone.layers.2.blocks.3.mlp.fc1.weight",
+      "backbone.layers.2.blocks.3.mlp.fc2.bias",
+      "backbone.layers.2.blocks.3.mlp.fc2.weight",
+      "backbone.layers.2.blocks.3.norm1.bias",
+      "backbone.layers.2.blocks.3.norm1.weight",
+      "backbone.layers.2.blocks.3.norm2.bias",
+      "backbone.layers.2.blocks.3.norm2.weight",
+      "backbone.layers.2.blocks.4.attn.proj.bias",
+      "backbone.layers.2.blocks.4.attn.proj.weight",
+      "backbone.layers.2.blocks.4.attn.qkv.bias",
+      "backbone.layers.2.blocks.4.attn.qkv.weight",
+      "backbone.layers.2.blocks.4.attn.relative_position_bias_table",
+      "backbone.layers.2.blocks.4.mlp.fc1.bias",
+      "backbone.layers.2.blocks.4.mlp.fc1.weight",
+      "backbone.layers.2.blocks.4.mlp.fc2.bias",
+      "backbone.layers.2.blocks.4.mlp.fc2.weight",
+      "backbone.layers.2.blocks.4.norm1.bias",
+      "backbone.layers.2.blocks.4.norm1.weight",
+      "backbone.layers.2.blocks.4.norm2.bias",
+      "backbone.layers.2.blocks.4.norm2.weight",
+      "backbone.layers.2.blocks.5.attn.proj.bias",
+      "backbone.layers.2.blocks.5.attn.proj.weight",
+      "backbone.layers.2.blocks.5.attn.qkv.bias",
+      "backbone.layers.2.blocks.5.attn.qkv.weight",
+      "backbone.layers.2.blocks.5.attn.relative_position_bias_table",
+      "backbone.layers.2.blocks.5.mlp.fc1.bias",
+      "backbone.layers.2.blocks.5.mlp.fc1.weight",
+      "backbone.layers.2.blocks.5.mlp.fc2.bias",
+      "backbone.layers.2.blocks.5.mlp.fc2.weight",
+      "backbone.layers.2.blocks.5.norm1.bias",
+      "backbone.layers.2.blocks.5.norm1.weight",
+      "backbone.layers.2.blocks.5.norm2.bias",
+      "backbone.layers.2.blocks.5.norm2.weight",
+      "backbone.layers.2.downsample.norm.bias",
+      "backbone.layers.2.downsample.norm.weight",
+      "backbone.layers.2.downsample.reduction.weight",
+      "backbone.layers.3.blocks.0.attn.proj.bias",
+      "backbone.layers.3.blocks.0.attn.proj.weight",
+      "backbone.layers.3.blocks.0.attn.qkv.bias",
+      "backbone.layers.3.blocks.0.attn.qkv.weight",
+      "backbone.layers.3.blocks.0.attn.relative_position_bias_table",
+      "backbone.layers.3.blocks.0.mlp.fc1.bias",
+      "backbone.layers.3.blocks.0.mlp.fc1.weight",
+      "backbone.layers.3.blocks.0.mlp.fc2.bias",
+      "backbone.layers.3.blocks.0.mlp.fc2.weight",
+      "backbone.layers.3.blocks.0.norm1.bias",
+      "backbone.layers.3.blocks.0.norm1.weight",
+      "backbone.layers.3.blocks.0.norm2.bias",
+      "backbone.layers.3.blocks.0.norm2.weight",
+      "backbone.layers.3.blocks.1.attn.proj.bias",
+      "backbone.layers.3.blocks.1.attn.proj.weight",
+      "backbone.layers.3.blocks.1.attn.qkv.bias",
+      "backbone.layers.3.blocks.1.attn.qkv.weight",
+      "backbone.layers.3.blocks.1.attn.relative_position_bias_table",
+      "backbone.layers.3.blocks.1.mlp.fc1.bias",
+      "backbone.layers.3.blocks.1.mlp.fc1.weight",
+      "backbone.layers.3.blocks.1.mlp.fc2.bias",
+      "backbone.layers.3.blocks.1.mlp.fc2.weight",
+      "backbone.layers.3.blocks.1.norm1.bias",
+      "backbone.layers.3.blocks.1.norm1.weight",
+      "backbone.layers.3.blocks.1.norm2.bias",
+      "backbone.layers.3.blocks.1.norm2.weight",
+      "backbone.layers.3.downsample.norm.bias",
+      "backbone.layers.3.downsample.norm.weight",
+      "backbone.layers.3.downsample.reduction.weight",
+      "backbone.norm.bias",
+      "backbone.norm.weight",
+      "backbone.patch_embed.norm.bias",
+      "backbone.patch_embed.norm.weight",
+      "backbone.patch_embed.proj.bias",
+      "backbone.patch_embed.proj.weight",
+      "fusion_head.0.bias",
+      "fusion_head.0.weight",
+      "fusion_head.3.bias",
+      "fusion_head.3.weight",
+      "stage_norms.layers_1.bias",
+      "stage_norms.layers_1.weight",
+      "stage_norms.layers_2.bias",
+      "stage_norms.layers_2.weight",
+      "stage_norms.layers_3.bias",
+      "stage_norms.layers_3.weight",
+      "stage_projs.layers_1.weight",
+      "stage_projs.layers_2.weight",
+      "stage_projs.layers_3.weight"
+    ],
+    "main_keys": [
+      "backbone.layers.0.blocks.0.attn.proj.bias",
+      "backbone.layers.0.blocks.0.attn.proj.weight",
+      "backbone.layers.0.blocks.0.attn.qkv.bias",
+      "backbone.layers.0.blocks.0.attn.qkv.weight",
+      "backbone.layers.0.blocks.0.attn.relative_position_bias_table",
+      "backbone.layers.0.blocks.0.mlp.fc1.bias",
+      "backbone.layers.0.blocks.0.mlp.fc1.weight",
+      "backbone.layers.0.blocks.0.mlp.fc2.bias",
+      "backbone.layers.0.blocks.0.mlp.fc2.weight",
+      "backbone.layers.0.blocks.0.norm1.bias",
+      "backbone.layers.0.blocks.0.norm1.weight",
+      "backbone.layers.0.blocks.0.norm2.bias",
+      "backbone.layers.0.blocks.0.norm2.weight",
+      "backbone.layers.0.blocks.1.attn.proj.bias",
+      "backbone.layers.0.blocks.1.attn.proj.weight",
+      "backbone.layers.0.blocks.1.attn.qkv.bias",
+      "backbone.layers.0.blocks.1.attn.qkv.weight",
+      "backbone.layers.0.blocks.1.attn.relative_position_bias_table",
+      "backbone.layers.0.blocks.1.mlp.fc1.bias",
+      "backbone.layers.0.blocks.1.mlp.fc1.weight",
+      "backbone.layers.0.blocks.1.mlp.fc2.bias",
+      "backbone.layers.0.blocks.1.mlp.fc2.weight",
+      "backbone.layers.0.blocks.1.norm1.bias",
+      "backbone.layers.0.blocks.1.norm1.weight",
+      "backbone.layers.0.blocks.1.norm2.bias",
+      "backbone.layers.0.blocks.1.norm2.weight",
+      "backbone.layers.1.blocks.0.attn.proj.bias",
+      "backbone.layers.1.blocks.0.attn.proj.weight",
+      "backbone.layers.1.blocks.0.attn.qkv.bias",
+      "backbone.layers.1.blocks.0.attn.qkv.weight",
+      "backbone.layers.1.blocks.0.attn.relative_position_bias_table",
+      "backbone.layers.1.blocks.0.mlp.fc1.bias",
+      "backbone.layers.1.blocks.0.mlp.fc1.weight",
+      "backbone.layers.1.blocks.0.mlp.fc2.bias",
+      "backbone.layers.1.blocks.0.mlp.fc2.weight",
+      "backbone.layers.1.blocks.0.norm1.bias",
+      "backbone.layers.1.blocks.0.norm1.weight",
+      "backbone.layers.1.blocks.0.norm2.bias",
+      "backbone.layers.1.blocks.0.norm2.weight",
+      "backbone.layers.1.blocks.1.attn.proj.bias",
+      "backbone.layers.1.blocks.1.attn.proj.weight",
+      "backbone.layers.1.blocks.1.attn.qkv.bias",
+      "backbone.layers.1.blocks.1.attn.qkv.weight",
+      "backbone.layers.1.blocks.1.attn.relative_position_bias_table",
+      "backbone.layers.1.blocks.1.mlp.fc1.bias",
+      "backbone.layers.1.blocks.1.mlp.fc1.weight",
+      "backbone.layers.1.blocks.1.mlp.fc2.bias",
+      "backbone.layers.1.blocks.1.mlp.fc2.weight",
+      "backbone.layers.1.blocks.1.norm1.bias",
+      "backbone.layers.1.blocks.1.norm1.weight",
+      "backbone.layers.1.blocks.1.norm2.bias",
+      "backbone.layers.1.blocks.1.norm2.weight",
+      "backbone.layers.1.downsample.norm.bias",
+      "backbone.layers.1.downsample.norm.weight",
+      "backbone.layers.1.downsample.reduction.weight",
+      "backbone.layers.2.blocks.0.attn.proj.bias",
+      "backbone.layers.2.blocks.0.attn.proj.weight",
+      "backbone.layers.2.blocks.0.attn.qkv.bias",
+      "backbone.layers.2.blocks.0.attn.qkv.weight",
+      "backbone.layers.2.blocks.0.attn.relative_position_bias_table",
+      "backbone.layers.2.blocks.0.mlp.fc1.bias",
+      "backbone.layers.2.blocks.0.mlp.fc1.weight",
+      "backbone.layers.2.blocks.0.mlp.fc2.bias",
+      "backbone.layers.2.blocks.0.mlp.fc2.weight",
+      "backbone.layers.2.blocks.0.norm1.bias",
+      "backbone.layers.2.blocks.0.norm1.weight",
+      "backbone.layers.2.blocks.0.norm2.bias",
+      "backbone.layers.2.blocks.0.norm2.weight",
+      "backbone.layers.2.blocks.1.attn.proj.bias",
+      "backbone.layers.2.blocks.1.attn.proj.weight",
+      "backbone.layers.2.blocks.1.attn.qkv.bias",
+      "backbone.layers.2.blocks.1.attn.qkv.weight",
+      "backbone.layers.2.blocks.1.attn.relative_position_bias_table",
+      "backbone.layers.2.blocks.1.mlp.fc1.bias",
+      "backbone.layers.2.blocks.1.mlp.fc1.weight",
+      "backbone.layers.2.blocks.1.mlp.fc2.bias",
+      "backbone.layers.2.blocks.1.mlp.fc2.weight",
+      "backbone.layers.2.blocks.1.norm1.bias",
+      "backbone.layers.2.blocks.1.norm1.weight",
+      "backbone.layers.2.blocks.1.norm2.bias",
+      "backbone.layers.2.blocks.1.norm2.weight",
+      "backbone.layers.2.blocks.2.attn.proj.bias",
+      "backbone.layers.2.blocks.2.attn.proj.weight",
+      "backbone.layers.2.blocks.2.attn.qkv.bias",
+      "backbone.layers.2.blocks.2.attn.qkv.weight",
+      "backbone.layers.2.blocks.2.attn.relative_position_bias_table",
+      "backbone.layers.2.blocks.2.mlp.fc1.bias",
+      "backbone.layers.2.blocks.2.mlp.fc1.weight",
+      "backbone.layers.2.blocks.2.mlp.fc2.bias",
+      "backbone.layers.2.blocks.2.mlp.fc2.weight",
+      "backbone.layers.2.blocks.2.norm1.bias",
+      "backbone.layers.2.blocks.2.norm1.weight",
+      "backbone.layers.2.blocks.2.norm2.bias",
+      "backbone.layers.2.blocks.2.norm2.weight",
+      "backbone.layers.2.blocks.3.attn.proj.bias",
+      "backbone.layers.2.blocks.3.attn.proj.weight",
+      "backbone.layers.2.blocks.3.attn.qkv.bias",
+      "backbone.layers.2.blocks.3.attn.qkv.weight",
+      "backbone.layers.2.blocks.3.attn.relative_position_bias_table",
+      "backbone.layers.2.blocks.3.mlp.fc1.bias",
+      "backbone.layers.2.blocks.3.mlp.fc1.weight",
+      "backbone.layers.2.blocks.3.mlp.fc2.bias",
+      "backbone.layers.2.blocks.3.mlp.fc2.weight",
+      "backbone.layers.2.blocks.3.norm1.bias",
+      "backbone.layers.2.blocks.3.norm1.weight",
+      "backbone.layers.2.blocks.3.norm2.bias",
+      "backbone.layers.2.blocks.3.norm2.weight",
+      "backbone.layers.2.blocks.4.attn.proj.bias",
+      "backbone.layers.2.blocks.4.attn.proj.weight",
+      "backbone.layers.2.blocks.4.attn.qkv.bias",
+      "backbone.layers.2.blocks.4.attn.qkv.weight",
+      "backbone.layers.2.blocks.4.attn.relative_position_bias_table",
+      "backbone.layers.2.blocks.4.mlp.fc1.bias",
+      "backbone.layers.2.blocks.4.mlp.fc1.weight",
+      "backbone.layers.2.blocks.4.mlp.fc2.bias",
+      "backbone.layers.2.blocks.4.mlp.fc2.weight",
+      "backbone.layers.2.blocks.4.norm1.bias",
+      "backbone.layers.2.blocks.4.norm1.weight",
+      "backbone.layers.2.blocks.4.norm2.bias",
+      "backbone.layers.2.blocks.4.norm2.weight",
+      "backbone.layers.2.blocks.5.attn.proj.bias",
+      "backbone.layers.2.blocks.5.attn.proj.weight",
+      "backbone.layers.2.blocks.5.attn.qkv.bias",
+      "backbone.layers.2.blocks.5.attn.qkv.weight",
+      "backbone.layers.2.blocks.5.attn.relative_position_bias_table",
+      "backbone.layers.2.blocks.5.mlp.fc1.bias",
+      "backbone.layers.2.blocks.5.mlp.fc1.weight",
+      "backbone.layers.2.blocks.5.mlp.fc2.bias",
+      "backbone.layers.2.blocks.5.mlp.fc2.weight",
+      "backbone.layers.2.blocks.5.norm1.bias",
+      "backbone.layers.2.blocks.5.norm1.weight",
+      "backbone.layers.2.blocks.5.norm2.bias",
+      "backbone.layers.2.blocks.5.norm2.weight",
+      "backbone.layers.2.downsample.norm.bias",
+      "backbone.layers.2.downsample.norm.weight",
+      "backbone.layers.2.downsample.reduction.weight",
+      "backbone.layers.3.blocks.0.attn.proj.bias",
+      "backbone.layers.3.blocks.0.attn.proj.weight",
+      "backbone.layers.3.blocks.0.attn.qkv.bias",
+      "backbone.layers.3.blocks.0.attn.qkv.weight",
+      "backbone.layers.3.blocks.0.attn.relative_position_bias_table",
+      "backbone.layers.3.blocks.0.mlp.fc1.bias",
+      "backbone.layers.3.blocks.0.mlp.fc1.weight",
+      "backbone.layers.3.blocks.0.mlp.fc2.bias",
+      "backbone.layers.3.blocks.0.mlp.fc2.weight",
+      "backbone.layers.3.blocks.0.norm1.bias",
+      "backbone.layers.3.blocks.0.norm1.weight",
+      "backbone.layers.3.blocks.0.norm2.bias",
+      "backbone.layers.3.blocks.0.norm2.weight",
+      "backbone.layers.3.blocks.1.attn.proj.bias",
+      "backbone.layers.3.blocks.1.attn.proj.weight",
+      "backbone.layers.3.blocks.1.attn.qkv.bias",
+      "backbone.layers.3.blocks.1.attn.qkv.weight",
+      "backbone.layers.3.blocks.1.attn.relative_position_bias_table",
+      "backbone.layers.3.blocks.1.mlp.fc1.bias",
+      "backbone.layers.3.blocks.1.mlp.fc1.weight",
+      "backbone.layers.3.blocks.1.mlp.fc2.bias",
+      "backbone.layers.3.blocks.1.mlp.fc2.weight",
+      "backbone.layers.3.blocks.1.norm1.bias",
+      "backbone.layers.3.blocks.1.norm1.weight",
+      "backbone.layers.3.blocks.1.norm2.bias",
+      "backbone.layers.3.blocks.1.norm2.weight",
+      "backbone.layers.3.downsample.norm.bias",
+      "backbone.layers.3.downsample.norm.weight",
+      "backbone.layers.3.downsample.reduction.weight",
+      "backbone.norm.bias",
+      "backbone.norm.weight",
+      "backbone.patch_embed.norm.bias",
+      "backbone.patch_embed.norm.weight",
+      "backbone.patch_embed.proj.bias",
+      "backbone.patch_embed.proj.weight",
+      "fusion_head.0.bias",
+      "fusion_head.0.weight",
+      "fusion_head.3.bias",
+      "fusion_head.3.weight",
+      "stage_norms.layers_1.bias",
+      "stage_norms.layers_1.weight",
+      "stage_norms.layers_2.bias",
+      "stage_norms.layers_2.weight",
+      "stage_norms.layers_3.bias",
+      "stage_norms.layers_3.weight",
+      "stage_projs.layers_1.weight",
+      "stage_projs.layers_2.weight",
+      "stage_projs.layers_3.weight"
+    ],
+    "keys_match": true,
+    "shape_match": true,
+    "shape_details": {
+      "backbone.layers.2.blocks.5.mlp.fc1.bias": {
+        "focal_shape": [
+          1536
+        ],
+        "main_shape": [
+          1536
+        ],
+        "match": true
+      },
+      "fusion_head.3.weight": {
+        "focal_shape": [
+          1,
+          256
+        ],
+        "main_shape": [
+          1,
+          256
+        ],
+        "match": true
+      },
+      "backbone.layers.1.blocks.0.attn.proj.weight": {
+        "focal_shape": [
+          192,
+          192
+        ],
+        "main_shape": [
+          192,
+          192
+        ],
+        "match": true
+      },
+      "backbone.layers.3.blocks.0.norm2.bias": {
+        "focal_shape": [
+          768
+        ],
+        "main_shape": [
+          768
+        ],
+        "match": true
+      },
+      "backbone.layers.3.blocks.0.norm1.weight": {
+        "focal_shape": [
+          768
+        ],
+        "main_shape": [
+          768
+        ],
+        "match": true
+      },
+      "backbone.layers.0.blocks.1.attn.qkv.weight": {
+        "focal_shape": [
+          288,
+          96
+        ],
+        "main_shape": [
+          288,
+          96
+        ],
+        "match": true
+      },
+      "backbone.layers.2.blocks.3.attn.relative_position_bias_table": {
+        "focal_shape": [
+          169,
+          12
+        ],
+        "main_shape": [
+          169,
+          12
+        ],
+        "match": true
+      },
+      "backbone.layers.2.blocks.0.norm2.weight": {
+        "focal_shape": [
+          384
+        ],
+        "main_shape": [
+          384
+        ],
+        "match": true
+      },
+      "backbone.layers.2.blocks.1.mlp.fc1.bias": {
+        "focal_shape": [
+          1536
+        ],
+        "main_shape": [
+          1536
+        ],
+        "match": true
+      },
+      "backbone.layers.3.blocks.1.attn.qkv.weight": {
+        "focal_shape": [
+          2304,
+          768
+        ],
+        "main_shape": [
+          2304,
+          768
+        ],
+        "match": true
+      },
+      "backbone.layers.2.blocks.1.norm2.weight": {
+        "focal_shape": [
+          384
+        ],
+        "main_shape": [
+          384
+        ],
+        "match": true
+      },
+      "backbone.layers.1.blocks.0.attn.proj.bias": {
+        "focal_shape": [
+          192
+        ],
+        "main_shape": [
+          192
+        ],
+        "match": true
+      },
+      "backbone.layers.2.blocks.4.norm2.bias": {
+        "focal_shape": [
+          384
+        ],
+        "main_shape": [
+          384
+        ],
+        "match": true
+      },
+      "backbone.layers.1.blocks.0.norm2.weight": {
+        "focal_shape": [
+          192
+        ],
+        "main_shape": [
+          192
+        ],
+        "match": true
+      },
+      "backbone.layers.2.blocks.2.mlp.fc1.weight": {
+        "focal_shape": [
+          1536,
+          384
+        ],
+        "main_shape": [
+          1536,
+          384
+        ],
+        "match": true
+      },
+      "backbone.layers.2.blocks.5.norm1.weight": {
+        "focal_shape": [
+          384
+        ],
+        "main_shape": [
+          384
+        ],
+        "match": true
+      },
+      "backbone.layers.0.blocks.0.attn.relative_position_bias_table": {
+        "focal_shape": [
+          169,
+          3
+        ],
+        "main_shape": [
+          169,
+          3
+        ],
+        "match": true
+      },
+      "backbone.layers.1.blocks.0.mlp.fc1.bias": {
+        "focal_shape": [
+          768
+        ],
+        "main_shape": [
+          768
+        ],
+        "match": true
+      },
+      "backbone.layers.0.blocks.1.attn.relative_position_bias_table": {
+        "focal_shape": [
+          169,
+          3
+        ],
+        "main_shape": [
+          169,
+          3
+        ],
+        "match": true
+      },
+      "backbone.layers.0.blocks.1.norm1.bias": {
+        "focal_shape": [
+          96
+        ],
+        "main_shape": [
+          96
+        ],
+        "match": true
+      },
+      "backbone.layers.1.blocks.1.attn.qkv.bias": {
+        "focal_shape": [
+          576
+        ],
+        "main_shape": [
+          576
+        ],
+        "match": true
+      },
+      "backbone.layers.2.blocks.4.mlp.fc2.bias": {
+        "focal_shape": [
+          384
+        ],
+        "main_shape": [
+          384
+        ],
+        "match": true
+      },
+      "backbone.layers.0.blocks.1.norm2.bias": {
+        "focal_shape": [
+          96
+        ],
+        "main_shape": [
+          96
+        ],
+        "match": true
+      },
+      "backbone.layers.2.blocks.3.norm2.weight": {
+        "focal_shape": [
+          384
+        ],
+        "main_shape": [
+          384
+        ],
+        "match": true
+      },
+      "backbone.layers.3.blocks.0.mlp.fc2.weight": {
+        "focal_shape": [
+          768,
+          3072
+        ],
+        "main_shape": [
+          768,
+          3072
+        ],
+        "match": true
+      },
+      "stage_norms.layers_2.weight": {
+        "focal_shape": [
+          384
+        ],
+        "main_shape": [
+          384
+        ],
+        "match": true
+      },
+      "backbone.layers.2.blocks.0.attn.relative_position_bias_table": {
+        "focal_shape": [
+          169,
+          12
+        ],
+        "main_shape": [
+          169,
+          12
+        ],
+        "match": true
+      },
+      "backbone.layers.2.blocks.2.attn.proj.bias": {
+        "focal_shape": [
+          384
+        ],
+        "main_shape": [
+          384
+        ],
+        "match": true
+      },
+      "backbone.layers.0.blocks.0.mlp.fc1.bias": {
+        "focal_shape": [
+          384
+        ],
+        "main_shape": [
+          384
+        ],
+        "match": true
+      },
+      "backbone.layers.3.blocks.1.norm2.weight": {
+        "focal_shape": [
+          768
+        ],
+        "main_shape": [
+          768
+        ],
+        "match": true
+      },
+      "backbone.layers.2.blocks.1.attn.proj.weight": {
+        "focal_shape": [
+          384,
+          384
+        ],
+        "main_shape": [
+          384,
+          384
+        ],
+        "match": true
+      },
+      "backbone.layers.3.blocks.0.norm1.bias": {
+        "focal_shape": [
+          768
+        ],
+        "main_shape": [
+          768
+        ],
+        "match": true
+      },
+      "backbone.layers.2.blocks.0.attn.proj.bias": {
+        "focal_shape": [
+          384
+        ],
+        "main_shape": [
+          384
+        ],
+        "match": true
+      },
+      "backbone.layers.2.blocks.4.attn.relative_position_bias_table": {
+        "focal_shape": [
+          169,
+          12
+        ],
+        "main_shape": [
+          169,
+          12
+        ],
+        "match": true
+      },
+      "backbone.layers.0.blocks.1.mlp.fc1.bias": {
+        "focal_shape": [
+          384
+        ],
+        "main_shape": [
+          384
+        ],
+        "match": true
+      },
+      "backbone.layers.1.blocks.0.norm2.bias": {
+        "focal_shape": [
+          192
+        ],
+        "main_shape": [
+          192
+        ],
+        "match": true
+      },
+      "backbone.layers.3.blocks.1.norm2.bias": {
+        "focal_shape": [
+          768
+        ],
+        "main_shape": [
+          768
+        ],
+        "match": true
+      },
+      "backbone.layers.2.blocks.3.mlp.fc1.bias": {
+        "focal_shape": [
+          1536
+        ],
+        "main_shape": [
+          1536
+        ],
+        "match": true
+      },
+      "backbone.layers.1.blocks.0.attn.qkv.bias": {
+        "focal_shape": [
+          576
+        ],
+        "main_shape": [
+          576
+        ],
+        "match": true
+      },
+      "backbone.layers.3.blocks.1.attn.proj.bias": {
+        "focal_shape": [
+          768
+        ],
+        "main_shape": [
+          768
+        ],
+        "match": true
+      },
+      "backbone.layers.2.downsample.norm.bias": {
+        "focal_shape": [
+          768
+        ],
+        "main_shape": [
+          768
+        ],
+        "match": true
+      },
+      "backbone.layers.2.blocks.1.attn.proj.bias": {
+        "focal_shape": [
+          384
+        ],
+        "main_shape": [
+          384
+        ],
+        "match": true
+      },
+      "backbone.layers.3.blocks.0.norm2.weight": {
+        "focal_shape": [
+          768
+        ],
+        "main_shape": [
+          768
+        ],
+        "match": true
+      },
+      "backbone.layers.2.blocks.4.attn.proj.bias": {
+        "focal_shape": [
+          384
+        ],
+        "main_shape": [
+          384
+        ],
+        "match": true
+      },
+      "backbone.layers.3.downsample.norm.bias": {
+        "focal_shape": [
+          1536
+        ],
+        "main_shape": [
+          1536
+        ],
+        "match": true
+      },
+      "backbone.layers.3.downsample.reduction.weight": {
+        "focal_shape": [
+          768,
+          1536
+        ],
+        "main_shape": [
+          768,
+          1536
+        ],
+        "match": true
+      },
+      "backbone.layers.3.blocks.1.attn.proj.weight": {
+        "focal_shape": [
+          768,
+          768
+        ],
+        "main_shape": [
+          768,
+          768
+        ],
+        "match": true
+      },
+      "backbone.layers.3.blocks.0.attn.proj.bias": {
+        "focal_shape": [
+          768
+        ],
+        "main_shape": [
+          768
+        ],
+        "match": true
+      },
+      "backbone.layers.2.blocks.3.mlp.fc2.bias": {
+        "focal_shape": [
+          384
+        ],
+        "main_shape": [
+          384
+        ],
+        "match": true
+      },
+      "backbone.patch_embed.proj.bias": {
+        "focal_shape": [
+          96
+        ],
+        "main_shape": [
+          96
+        ],
+        "match": true
+      },
+      "backbone.layers.2.downsample.reduction.weight": {
+        "focal_shape": [
+          384,
+          768
+        ],
+        "main_shape": [
+          384,
+          768
+        ],
+        "match": true
+      },
+      "backbone.layers.3.blocks.1.mlp.fc2.bias": {
+        "focal_shape": [
+          768
+        ],
+        "main_shape": [
+          768
+        ],
+        "match": true
+      },
+      "backbone.layers.1.blocks.1.mlp.fc2.weight": {
+        "focal_shape": [
+          192,
+          768
+        ],
+        "main_shape": [
+          192,
+          768
+        ],
+        "match": true
+      },
+      "backbone.layers.2.blocks.2.norm1.bias": {
+        "focal_shape": [
+          384
+        ],
+        "main_shape": [
+          384
+        ],
+        "match": true
+      },
+      "stage_norms.layers_1.bias": {
+        "focal_shape": [
+          192
+        ],
+        "main_shape": [
+          192
+        ],
+        "match": true
+      },
+      "backbone.layers.3.blocks.0.attn.qkv.weight": {
+        "focal_shape": [
+          2304,
+          768
+        ],
+        "main_shape": [
+          2304,
+          768
+        ],
+        "match": true
+      },
+      "backbone.layers.0.blocks.1.norm1.weight": {
+        "focal_shape": [
+          96
+        ],
+        "main_shape": [
+          96
+        ],
+        "match": true
+      },
+      "backbone.layers.0.blocks.0.attn.proj.weight": {
+        "focal_shape": [
+          96,
+          96
+        ],
+        "main_shape": [
+          96,
+          96
+        ],
+        "match": true
+      },
+      "stage_norms.layers_3.weight": {
+        "focal_shape": [
+          768
+        ],
+        "main_shape": [
+          768
+        ],
+        "match": true
+      },
+      "backbone.layers.2.blocks.0.attn.qkv.bias": {
+        "focal_shape": [
+          1152
+        ],
+        "main_shape": [
+          1152
+        ],
+        "match": true
+      },
+      "backbone.layers.0.blocks.0.mlp.fc2.weight": {
+        "focal_shape": [
+          96,
+          384
+        ],
+        "main_shape": [
+          96,
+          384
+        ],
+        "match": true
+      },
+      "backbone.layers.2.blocks.4.norm1.weight": {
+        "focal_shape": [
+          384
+        ],
+        "main_shape": [
+          384
+        ],
+        "match": true
+      },
+      "backbone.layers.3.blocks.0.mlp.fc2.bias": {
+        "focal_shape": [
+          768
+        ],
+        "main_shape": [
+          768
+        ],
+        "match": true
+      },
+      "backbone.layers.1.blocks.0.norm1.bias": {
+        "focal_shape": [
+          192
+        ],
+        "main_shape": [
+          192
+        ],
+        "match": true
+      },
+      "backbone.layers.0.blocks.0.attn.qkv.weight": {
+        "focal_shape": [
+          288,
+          96
+        ],
+        "main_shape": [
+          288,
+          96
+        ],
+        "match": true
+      },
+      "backbone.layers.2.blocks.4.mlp.fc2.weight": {
+        "focal_shape": [
+          384,
+          1536
+        ],
+        "main_shape": [
+          384,
+          1536
+        ],
+        "match": true
+      },
+      "backbone.patch_embed.norm.bias": {
+        "focal_shape": [
+          96
+        ],
+        "main_shape": [
+          96
+        ],
+        "match": true
+      },
+      "stage_projs.layers_1.weight": {
+        "focal_shape": [
+          128,
+          192
+        ],
+        "main_shape": [
+          128,
+          192
+        ],
+        "match": true
+      },
+      "backbone.layers.2.blocks.2.attn.proj.weight": {
+        "focal_shape": [
+          384,
+          384
+        ],
+        "main_shape": [
+          384,
+          384
+        ],
+        "match": true
+      },
+      "backbone.layers.3.blocks.1.attn.relative_position_bias_table": {
+        "focal_shape": [
+          169,
+          24
+        ],
+        "main_shape": [
+          169,
+          24
+        ],
+        "match": true
+      },
+      "backbone.layers.1.blocks.1.mlp.fc2.bias": {
+        "focal_shape": [
+          192
+        ],
+        "main_shape": [
+          192
+        ],
+        "match": true
+      },
+      "backbone.layers.1.blocks.1.attn.qkv.weight": {
+        "focal_shape": [
+          576,
+          192
+        ],
+        "main_shape": [
+          576,
+          192
+        ],
+        "match": true
+      },
+      "backbone.layers.2.blocks.1.norm1.bias": {
+        "focal_shape": [
+          384
+        ],
+        "main_shape": [
+          384
+        ],
+        "match": true
+      },
+      "backbone.layers.2.blocks.5.mlp.fc2.bias": {
+        "focal_shape": [
+          384
+        ],
+        "main_shape": [
+          384
+        ],
+        "match": true
+      },
+      "backbone.layers.2.blocks.1.mlp.fc2.weight": {
+        "focal_shape": [
+          384,
+          1536
+        ],
+        "main_shape": [
+          384,
+          1536
+        ],
+        "match": true
+      },
+      "backbone.layers.3.blocks.0.attn.relative_position_bias_table": {
+        "focal_shape": [
+          169,
+          24
+        ],
+        "main_shape": [
+          169,
+          24
+        ],
+        "match": true
+      },
+      "backbone.layers.1.blocks.1.attn.proj.bias": {
+        "focal_shape": [
+          192
+        ],
+        "main_shape": [
+          192
+        ],
+        "match": true
+      },
+      "backbone.layers.2.blocks.5.attn.proj.weight": {
+        "focal_shape": [
+          384,
+          384
+        ],
+        "main_shape": [
+          384,
+          384
+        ],
+        "match": true
+      },
+      "backbone.layers.3.blocks.0.attn.proj.weight": {
+        "focal_shape": [
+          768,
+          768
+        ],
+        "main_shape": [
+          768,
+          768
+        ],
+        "match": true
+      },
+      "backbone.layers.3.blocks.1.mlp.fc1.bias": {
+        "focal_shape": [
+          3072
+        ],
+        "main_shape": [
+          3072
+        ],
+        "match": true
+      },
+      "backbone.layers.0.blocks.0.mlp.fc2.bias": {
+        "focal_shape": [
+          96
+        ],
+        "main_shape": [
+          96
+        ],
+        "match": true
+      },
+      "backbone.layers.1.blocks.1.attn.relative_position_bias_table": {
+        "focal_shape": [
+          169,
+          6
+        ],
+        "main_shape": [
+          169,
+          6
+        ],
+        "match": true
+      },
+      "backbone.layers.2.blocks.2.norm2.bias": {
+        "focal_shape": [
+          384
+        ],
+        "main_shape": [
+          384
+        ],
+        "match": true
+      },
+      "backbone.layers.3.blocks.1.attn.qkv.bias": {
+        "focal_shape": [
+          2304
+        ],
+        "main_shape": [
+          2304
+        ],
+        "match": true
+      },
+      "backbone.layers.2.blocks.4.attn.proj.weight": {
+        "focal_shape": [
+          384,
+          384
+        ],
+        "main_shape": [
+          384,
+          384
+        ],
+        "match": true
+      },
+      "backbone.layers.3.blocks.0.mlp.fc1.bias": {
+        "focal_shape": [
+          3072
+        ],
+        "main_shape": [
+          3072
+        ],
+        "match": true
+      },
+      "backbone.layers.1.blocks.1.mlp.fc1.weight": {
+        "focal_shape": [
+          768,
+          192
+        ],
+        "main_shape": [
+          768,
+          192
+        ],
+        "match": true
+      },
+      "backbone.layers.2.blocks.4.attn.qkv.weight": {
+        "focal_shape": [
+          1152,
+          384
+        ],
+        "main_shape": [
+          1152,
+          384
+        ],
+        "match": true
+      },
+      "backbone.layers.2.blocks.3.attn.proj.weight": {
+        "focal_shape": [
+          384,
+          384
+        ],
+        "main_shape": [
+          384,
+          384
+        ],
+        "match": true
+      },
+      "backbone.layers.2.blocks.1.mlp.fc2.bias": {
+        "focal_shape": [
+          384
+        ],
+        "main_shape": [
+          384
+        ],
+        "match": true
+      },
+      "stage_projs.layers_2.weight": {
+        "focal_shape": [
+          128,
+          384
+        ],
+        "main_shape": [
+          128,
+          384
+        ],
+        "match": true
+      },
+      "backbone.patch_embed.proj.weight": {
+        "focal_shape": [
+          96,
+          3,
+          4,
+          4
+        ],
+        "main_shape": [
+          96,
+          3,
+          4,
+          4
+        ],
+        "match": true
+      },
+      "backbone.patch_embed.norm.weight": {
+        "focal_shape": [
+          96
+        ],
+        "main_shape": [
+          96
+        ],
+        "match": true
+      },
+      "backbone.layers.2.blocks.1.norm2.bias": {
+        "focal_shape": [
+          384
+        ],
+        "main_shape": [
+          384
+        ],
+        "match": true
+      },
+      "backbone.layers.3.blocks.1.mlp.fc2.weight": {
+        "focal_shape": [
+          768,
+          3072
+        ],
+        "main_shape": [
+          768,
+          3072
+        ],
+        "match": true
+      },
+      "backbone.layers.0.blocks.1.mlp.fc2.bias": {
+        "focal_shape": [
+          96
+        ],
+        "main_shape": [
+          96
+        ],
+        "match": true
+      },
+      "backbone.layers.1.blocks.1.norm1.bias": {
+        "focal_shape": [
+          192
+        ],
+        "main_shape": [
+          192
+        ],
+        "match": true
+      },
+      "backbone.layers.2.blocks.1.attn.relative_position_bias_table": {
+        "focal_shape": [
+          169,
+          12
+        ],
+        "main_shape": [
+          169,
+          12
+        ],
+        "match": true
+      },
+      "backbone.layers.2.blocks.3.norm1.bias": {
+        "focal_shape": [
+          384
+        ],
+        "main_shape": [
+          384
+        ],
+        "match": true
+      },
+      "backbone.layers.2.blocks.5.norm2.weight": {
+        "focal_shape": [
+          384
+        ],
+        "main_shape": [
+          384
+        ],
+        "match": true
+      },
+      "backbone.layers.2.blocks.3.attn.qkv.weight": {
+        "focal_shape": [
+          1152,
+          384
+        ],
+        "main_shape": [
+          1152,
+          384
+        ],
+        "match": true
+      },
+      "backbone.layers.2.blocks.2.attn.qkv.weight": {
+        "focal_shape": [
+          1152,
+          384
+        ],
+        "main_shape": [
+          1152,
+          384
+        ],
+        "match": true
+      },
+      "backbone.layers.1.blocks.0.mlp.fc2.bias": {
+        "focal_shape": [
+          192
+        ],
+        "main_shape": [
+          192
+        ],
+        "match": true
+      },
+      "backbone.layers.0.blocks.0.mlp.fc1.weight": {
+        "focal_shape": [
+          384,
+          96
+        ],
+        "main_shape": [
+          384,
+          96
+        ],
+        "match": true
+      },
+      "backbone.layers.2.blocks.3.attn.proj.bias": {
+        "focal_shape": [
+          384
+        ],
+        "main_shape": [
+          384
+        ],
+        "match": true
+      },
+      "stage_norms.layers_1.weight": {
+        "focal_shape": [
+          192
+        ],
+        "main_shape": [
+          192
+        ],
+        "match": true
+      },
+      "backbone.layers.2.blocks.4.norm1.bias": {
+        "focal_shape": [
+          384
+        ],
+        "main_shape": [
+          384
+        ],
+        "match": true
+      },
+      "backbone.layers.2.blocks.1.mlp.fc1.weight": {
+        "focal_shape": [
+          1536,
+          384
+        ],
+        "main_shape": [
+          1536,
+          384
+        ],
+        "match": true
+      },
+      "backbone.layers.0.blocks.1.mlp.fc1.weight": {
+        "focal_shape": [
+          384,
+          96
+        ],
+        "main_shape": [
+          384,
+          96
+        ],
+        "match": true
+      },
+      "fusion_head.0.bias": {
+        "focal_shape": [
+          256
+        ],
+        "main_shape": [
+          256
+        ],
+        "match": true
+      },
+      "backbone.layers.0.blocks.1.attn.proj.weight": {
+        "focal_shape": [
+          96,
+          96
+        ],
+        "main_shape": [
+          96,
+          96
+        ],
+        "match": true
+      },
+      "backbone.layers.3.downsample.norm.weight": {
+        "focal_shape": [
+          1536
+        ],
+        "main_shape": [
+          1536
+        ],
+        "match": true
+      },
+      "backbone.layers.2.blocks.0.norm2.bias": {
+        "focal_shape": [
+          384
+        ],
+        "main_shape": [
+          384
+        ],
+        "match": true
+      },
+      "backbone.layers.1.downsample.norm.bias": {
+        "focal_shape": [
+          384
+        ],
+        "main_shape": [
+          384
+        ],
+        "match": true
+      },
+      "backbone.layers.1.blocks.1.mlp.fc1.bias": {
+        "focal_shape": [
+          768
+        ],
+        "main_shape": [
+          768
+        ],
+        "match": true
+      },
+      "backbone.layers.2.blocks.0.attn.qkv.weight": {
+        "focal_shape": [
+          1152,
+          384
+        ],
+        "main_shape": [
+          1152,
+          384
+        ],
+        "match": true
+      },
+      "backbone.layers.1.downsample.norm.weight": {
+        "focal_shape": [
+          384
+        ],
+        "main_shape": [
+          384
+        ],
+        "match": true
+      },
+      "backbone.layers.1.blocks.1.norm2.weight": {
+        "focal_shape": [
+          192
+        ],
+        "main_shape": [
+          192
+        ],
+        "match": true
+      },
+      "backbone.layers.2.blocks.4.norm2.weight": {
+        "focal_shape": [
+          384
+        ],
+        "main_shape": [
+          384
+        ],
+        "match": true
+      },
+      "backbone.layers.2.blocks.3.mlp.fc2.weight": {
+        "focal_shape": [
+          384,
+          1536
+        ],
+        "main_shape": [
+          384,
+          1536
+        ],
+        "match": true
+      },
+      "stage_projs.layers_3.weight": {
+        "focal_shape": [
+          128,
+          768
+        ],
+        "main_shape": [
+          128,
+          768
+        ],
+        "match": true
+      },
+      "backbone.layers.2.blocks.0.norm1.weight": {
+        "focal_shape": [
+          384
+        ],
+        "main_shape": [
+          384
+        ],
+        "match": true
+      },
+      "backbone.layers.1.blocks.0.norm1.weight": {
+        "focal_shape": [
+          192
+        ],
+        "main_shape": [
+          192
+        ],
+        "match": true
+      },
+      "backbone.layers.3.blocks.0.attn.qkv.bias": {
+        "focal_shape": [
+          2304
+        ],
+        "main_shape": [
+          2304
+        ],
+        "match": true
+      },
+      "backbone.layers.2.blocks.5.attn.proj.bias": {
+        "focal_shape": [
+          384
+        ],
+        "main_shape": [
+          384
+        ],
+        "match": true
+      },
+      "backbone.layers.3.blocks.0.mlp.fc1.weight": {
+        "focal_shape": [
+          3072,
+          768
+        ],
+        "main_shape": [
+          3072,
+          768
+        ],
+        "match": true
+      },
+      "backbone.layers.2.blocks.3.attn.qkv.bias": {
+        "focal_shape": [
+          1152
+        ],
+        "main_shape": [
+          1152
+        ],
+        "match": true
+      },
+      "backbone.layers.2.blocks.5.norm1.bias": {
+        "focal_shape": [
+          384
+        ],
+        "main_shape": [
+          384
+        ],
+        "match": true
+      },
+      "backbone.layers.3.blocks.1.norm1.weight": {
+        "focal_shape": [
+          768
+        ],
+        "main_shape": [
+          768
+        ],
+        "match": true
+      },
+      "backbone.layers.1.blocks.0.mlp.fc1.weight": {
+        "focal_shape": [
+          768,
+          192
+        ],
+        "main_shape": [
+          768,
+          192
+        ],
+        "match": true
+      },
+      "stage_norms.layers_3.bias": {
+        "focal_shape": [
+          768
+        ],
+        "main_shape": [
+          768
+        ],
+        "match": true
+      },
+      "backbone.layers.2.blocks.5.norm2.bias": {
+        "focal_shape": [
+          384
+        ],
+        "main_shape": [
+          384
+        ],
+        "match": true
+      },
+      "backbone.layers.0.blocks.1.attn.proj.bias": {
+        "focal_shape": [
+          96
+        ],
+        "main_shape": [
+          96
+        ],
+        "match": true
+      },
+      "backbone.layers.2.blocks.2.norm2.weight": {
+        "focal_shape": [
+          384
+        ],
+        "main_shape": [
+          384
+        ],
+        "match": true
+      },
+      "backbone.norm.weight": {
+        "focal_shape": [
+          768
+        ],
+        "main_shape": [
+          768
+        ],
+        "match": true
+      },
+      "backbone.layers.0.blocks.0.norm2.weight": {
+        "focal_shape": [
+          96
+        ],
+        "main_shape": [
+          96
+        ],
+        "match": true
+      },
+      "backbone.layers.2.blocks.2.norm1.weight": {
+        "focal_shape": [
+          384
+        ],
+        "main_shape": [
+          384
+        ],
+        "match": true
+      },
+      "backbone.layers.2.blocks.1.attn.qkv.bias": {
+        "focal_shape": [
+          1152
+        ],
+        "main_shape": [
+          1152
+        ],
+        "match": true
+      },
+      "backbone.layers.0.blocks.0.norm2.bias": {
+        "focal_shape": [
+          96
+        ],
+        "main_shape": [
+          96
+        ],
+        "match": true
+      },
+      "backbone.layers.0.blocks.1.mlp.fc2.weight": {
+        "focal_shape": [
+          96,
+          384
+        ],
+        "main_shape": [
+          96,
+          384
+        ],
+        "match": true
+      },
+      "backbone.layers.2.blocks.2.attn.qkv.bias": {
+        "focal_shape": [
+          1152
+        ],
+        "main_shape": [
+          1152
+        ],
+        "match": true
+      },
+      "backbone.layers.2.blocks.5.attn.relative_position_bias_table": {
+        "focal_shape": [
+          169,
+          12
+        ],
+        "main_shape": [
+          169,
+          12
+        ],
+        "match": true
+      },
+      "backbone.layers.2.blocks.2.mlp.fc2.bias": {
+        "focal_shape": [
+          384
+        ],
+        "main_shape": [
+          384
+        ],
+        "match": true
+      },
+      "backbone.layers.1.blocks.1.norm2.bias": {
+        "focal_shape": [
+          192
+        ],
+        "main_shape": [
+          192
+        ],
+        "match": true
+      },
+      "backbone.layers.3.blocks.1.mlp.fc1.weight": {
+        "focal_shape": [
+          3072,
+          768
+        ],
+        "main_shape": [
+          3072,
+          768
+        ],
+        "match": true
+      },
+      "backbone.layers.1.blocks.0.attn.relative_position_bias_table": {
+        "focal_shape": [
+          169,
+          6
+        ],
+        "main_shape": [
+          169,
+          6
+        ],
+        "match": true
+      },
+      "backbone.layers.2.blocks.4.mlp.fc1.weight": {
+        "focal_shape": [
+          1536,
+          384
+        ],
+        "main_shape": [
+          1536,
+          384
+        ],
+        "match": true
+      },
+      "fusion_head.0.weight": {
+        "focal_shape": [
+          256,
+          384
+        ],
+        "main_shape": [
+          256,
+          384
+        ],
+        "match": true
+      },
+      "backbone.layers.1.downsample.reduction.weight": {
+        "focal_shape": [
+          192,
+          384
+        ],
+        "main_shape": [
+          192,
+          384
+        ],
+        "match": true
+      },
+      "backbone.layers.2.blocks.3.norm1.weight": {
+        "focal_shape": [
+          384
+        ],
+        "main_shape": [
+          384
+        ],
+        "match": true
+      },
+      "backbone.layers.2.blocks.2.attn.relative_position_bias_table": {
+        "focal_shape": [
+          169,
+          12
+        ],
+        "main_shape": [
+          169,
+          12
+        ],
+        "match": true
+      },
+      "backbone.layers.2.blocks.0.mlp.fc1.bias": {
+        "focal_shape": [
+          1536
+        ],
+        "main_shape": [
+          1536
+        ],
+        "match": true
+      },
+      "backbone.layers.2.blocks.5.attn.qkv.weight": {
+        "focal_shape": [
+          1152,
+          384
+        ],
+        "main_shape": [
+          1152,
+          384
+        ],
+        "match": true
+      },
+      "backbone.layers.2.blocks.1.norm1.weight": {
+        "focal_shape": [
+          384
+        ],
+        "main_shape": [
+          384
+        ],
+        "match": true
+      },
+      "stage_norms.layers_2.bias": {
+        "focal_shape": [
+          384
+        ],
+        "main_shape": [
+          384
+        ],
+        "match": true
+      },
+      "backbone.layers.2.blocks.5.attn.qkv.bias": {
+        "focal_shape": [
+          1152
+        ],
+        "main_shape": [
+          1152
+        ],
+        "match": true
+      },
+      "backbone.layers.1.blocks.1.norm1.weight": {
+        "focal_shape": [
+          192
+        ],
+        "main_shape": [
+          192
+        ],
+        "match": true
+      },
+      "backbone.layers.0.blocks.1.norm2.weight": {
+        "focal_shape": [
+          96
+        ],
+        "main_shape": [
+          96
+        ],
+        "match": true
+      },
+      "backbone.layers.2.blocks.2.mlp.fc2.weight": {
+        "focal_shape": [
+          384,
+          1536
+        ],
+        "main_shape": [
+          384,
+          1536
+        ],
+        "match": true
+      },
+      "backbone.layers.1.blocks.1.attn.proj.weight": {
+        "focal_shape": [
+          192,
+          192
+        ],
+        "main_shape": [
+          192,
+          192
+        ],
+        "match": true
+      },
+      "backbone.layers.0.blocks.0.norm1.bias": {
+        "focal_shape": [
+          96
+        ],
+        "main_shape": [
+          96
+        ],
+        "match": true
+      },
+      "backbone.layers.2.blocks.0.attn.proj.weight": {
+        "focal_shape": [
+          384,
+          384
+        ],
+        "main_shape": [
+          384,
+          384
+        ],
+        "match": true
+      },
+      "backbone.layers.2.blocks.3.mlp.fc1.weight": {
+        "focal_shape": [
+          1536,
+          384
+        ],
+        "main_shape": [
+          1536,
+          384
+        ],
+        "match": true
+      },
+      "backbone.layers.3.blocks.1.norm1.bias": {
+        "focal_shape": [
+          768
+        ],
+        "main_shape": [
+          768
+        ],
+        "match": true
+      },
+      "fusion_head.3.bias": {
+        "focal_shape": [
+          1
+        ],
+        "main_shape": [
+          1
+        ],
+        "match": true
+      },
+      "backbone.layers.0.blocks.0.attn.qkv.bias": {
+        "focal_shape": [
+          288
+        ],
+        "main_shape": [
+          288
+        ],
+        "match": true
+      },
+      "backbone.layers.2.blocks.2.mlp.fc1.bias": {
+        "focal_shape": [
+          1536
+        ],
+        "main_shape": [
+          1536
+        ],
+        "match": true
+      },
+      "backbone.layers.0.blocks.0.attn.proj.bias": {
+        "focal_shape": [
+          96
+        ],
+        "main_shape": [
+          96
+        ],
+        "match": true
+      },
+      "backbone.layers.0.blocks.0.norm1.weight": {
+        "focal_shape": [
+          96
+        ],
+        "main_shape": [
+          96
+        ],
+        "match": true
+      },
+      "backbone.layers.2.blocks.0.norm1.bias": {
+        "focal_shape": [
+          384
+        ],
+        "main_shape": [
+          384
+        ],
+        "match": true
+      },
+      "backbone.layers.1.blocks.0.mlp.fc2.weight": {
+        "focal_shape": [
+          192,
+          768
+        ],
+        "main_shape": [
+          192,
+          768
+        ],
+        "match": true
+      },
+      "backbone.layers.2.blocks.0.mlp.fc2.bias": {
+        "focal_shape": [
+          384
+        ],
+        "main_shape": [
+          384
+        ],
+        "match": true
+      },
+      "backbone.layers.2.blocks.3.norm2.bias": {
+        "focal_shape": [
+          384
+        ],
+        "main_shape": [
+          384
+        ],
+        "match": true
+      },
+      "backbone.layers.2.blocks.0.mlp.fc2.weight": {
+        "focal_shape": [
+          384,
+          1536
+        ],
+        "main_shape": [
+          384,
+          1536
+        ],
+        "match": true
+      },
+      "backbone.layers.2.blocks.1.attn.qkv.weight": {
+        "focal_shape": [
+          1152,
+          384
+        ],
+        "main_shape": [
+          1152,
+          384
+        ],
+        "match": true
+      },
+      "backbone.layers.2.downsample.norm.weight": {
+        "focal_shape": [
+          768
+        ],
+        "main_shape": [
+          768
+        ],
+        "match": true
+      },
+      "backbone.layers.0.blocks.1.attn.qkv.bias": {
+        "focal_shape": [
+          288
+        ],
+        "main_shape": [
+          288
+        ],
+        "match": true
+      },
+      "backbone.layers.2.blocks.4.mlp.fc1.bias": {
+        "focal_shape": [
+          1536
+        ],
+        "main_shape": [
+          1536
+        ],
+        "match": true
+      },
+      "backbone.layers.2.blocks.0.mlp.fc1.weight": {
+        "focal_shape": [
+          1536,
+          384
+        ],
+        "main_shape": [
+          1536,
+          384
+        ],
+        "match": true
+      },
+      "backbone.norm.bias": {
+        "focal_shape": [
+          768
+        ],
+        "main_shape": [
+          768
+        ],
+        "match": true
+      },
+      "backbone.layers.2.blocks.4.attn.qkv.bias": {
+        "focal_shape": [
+          1152
+        ],
+        "main_shape": [
+          1152
+        ],
+        "match": true
+      },
+      "backbone.layers.2.blocks.5.mlp.fc2.weight": {
+        "focal_shape": [
+          384,
+          1536
+        ],
+        "main_shape": [
+          384,
+          1536
+        ],
+        "match": true
+      },
+      "backbone.layers.2.blocks.5.mlp.fc1.weight": {
+        "focal_shape": [
+          1536,
+          384
+        ],
+        "main_shape": [
+          1536,
+          384
+        ],
+        "match": true
+      },
+      "backbone.layers.1.blocks.0.attn.qkv.weight": {
+        "focal_shape": [
+          576,
+          192
+        ],
+        "main_shape": [
+          576,
+          192
+        ],
+        "match": true
+      }
+    }
+  },
+  "freeze_schedule": {
+    "epoch_1": {
+      "trainable_parameters": 273537,
+      "trainable_tensors": 13
+    },
+    "epoch_5": {
+      "trainable_parameters": 273537,
+      "trainable_tensors": 13
+    },
+    "epoch_6": {
+      "trainable_parameters": 15641649,
+      "trainable_tensors": 44
+    },
+    "epoch_9": {
+      "trainable_parameters": 15641649,
+      "trainable_tensors": 44
+    },
+    "epoch_10": {
+      "trainable_parameters": 27792891,
+      "trainable_tensors": 184
+    },
+    "epoch_25": {
+      "trainable_parameters": 27792891,
+      "trainable_tensors": 184
+    }
+  },
+  "optimizer_scheduler": {
+    "lr_head": 0.0003,
+    "lr_backbone": 2.9999999999999997e-05,
+    "weight_decay": 0.0001,
+    "param_groups": [
+      {
+        "lr": 0.0003,
+        "param_count": 273537
+      }
+    ],
+    "T_0": 10,
+    "T_mult": 2,
+    "optimizer_type": "AdamW"
+  },
+  "loss_equivalence": {
+    "all_tests_passed": true,
+    "test_cases": {
+      "positive_easy": {
+        "focal_loss": 0.1286323219537735,
+        "bce_loss": 0.1286323219537735,
+        "abs_error": 0.0,
+        "passed": true
+      },
+      "positive_hard": {
+        "focal_loss": 1.5738970041275024,
+        "bce_loss": 1.573896884918213,
+        "abs_error": 1.1920928955078125e-07,
+        "passed": true
+      },
+      "negative_easy": {
+        "focal_loss": 0.07277379930019379,
+        "bce_loss": 0.07277345657348633,
+        "abs_error": 3.427267074584961e-07,
+        "passed": true
+      },
+      "negative_hard": {
+        "focal_loss": 2.973015546798706,
+        "bce_loss": 2.973015546798706,
+        "abs_error": 0.0,
+        "passed": true
+      },
+      "logit_zero_pos": {
+        "focal_loss": 0.3749042749404907,
+        "bce_loss": 0.37490424513816833,
+        "abs_error": 2.9802322387695312e-08,
+        "passed": true
+      },
+      "logit_zero_neg": {
+        "focal_loss": 0.6849871277809143,
+        "bce_loss": 0.6849870681762695,
+        "abs_error": 5.960464477539063e-08,
+        "passed": true
+      },
+      "large_positive": {
+        "focal_loss": 0.5000007152557373,
+        "bce_loss": 0.5000007152557373,
+        "abs_error": 0.0,
+        "passed": true
+      },
+      "large_negative": {
+        "focal_loss": 10.317449569702148,
+        "bce_loss": 10.317449569702148,
+        "abs_error": 0.0,
+        "passed": true
+      },
+      "small_pos_logit": {
+        "focal_loss": 0.3724566698074341,
+        "bce_loss": 0.3724566698074341,
+        "abs_error": 0.0,
+        "passed": true
+      },
+      "small_neg_logit": {
+        "focal_loss": 0.6801906228065491,
+        "bce_loss": 0.6801905632019043,
+        "abs_error": 5.960464477539063e-08,
+        "passed": true
+      },
+      "random_batch": {
+        "focal_loss": 1.0409544706344604,
+        "bce_loss": 1.040954351425171,
+        "abs_error": 1.1920928955078125e-07,
+        "passed": true
+      }
+    }
+  },
+  "tta_transforms": {
+    "focal_tta_count": 5,
+    "baseline_tta_count": 5,
+    "count_match": true,
+    "focal_transform_types": [
+      [
+        "LongestMaxSize",
+        "PadIfNeeded",
+        "CenterCrop",
+        "Normalize",
+        "ToTensorV2"
+      ],
+      [
+        "LongestMaxSize",
+        "PadIfNeeded",
+        "CenterCrop",
+        "Normalize",
+        "ToTensorV2"
+      ],
+      [
+        "LongestMaxSize",
+        "PadIfNeeded",
+        "CenterCrop",
+        "Normalize",
+        "ToTensorV2"
+      ],
+      [
+        "LongestMaxSize",
+        "PadIfNeeded",
+        "CenterCrop",
+        "Normalize",
+        "ToTensorV2"
+      ],
+      [
+        "LongestMaxSize",
+        "PadIfNeeded",
+        "CenterCrop",
+        "Normalize",
+        "ToTensorV2"
+      ]
+    ],
+    "baseline_transform_types": [
+      [
+        "LongestMaxSize",
+        "PadIfNeeded",
+        "CenterCrop",
+        "Normalize",
+        "ToTensorV2"
+      ],
+      [
+        "LongestMaxSize",
+        "PadIfNeeded",
+        "CenterCrop",
+        "Normalize",
+        "ToTensorV2"
+      ],
+      [
+        "LongestMaxSize",
+        "PadIfNeeded",
+        "CenterCrop",
+        "Normalize",
+        "ToTensorV2"
+      ],
+      [
+        "LongestMaxSize",
+        "PadIfNeeded",
+        "CenterCrop",
+        "Normalize",
+        "ToTensorV2"
+      ],
+      [
+        "LongestMaxSize",
+        "PadIfNeeded",
+        "CenterCrop",
+        "Normalize",
+        "ToTensorV2"
+      ]
+    ],
+    "types_match": true
+  },
+  "pos_weight": {
+    "calculated_pos_weight": 0.5291235710397387,
+    "expected_pos_weight": 0.5291235710397387,
+    "match": true,
+    "n_benign": 1944,
+    "n_malignant": 3674
+  },
+  "seed_reproducibility": {
+    "seed_function_exists": true,
+    "python_rng_savable": true,
+    "numpy_rng_savable": true,
+    "torch_cpu_rng_savable": true,
+    "torch_cuda_rng_savable": false
+  },
+  "checkpoint_content": {
+    "all_required_fields_present": true,
+    "fields": {
+      "epoch": true,
+      "model_state_dict": true,
+      "val_auc": true,
+      "config": true,
+      "history": true,
+      "optimizer_state_dict": true,
+      "scheduler_state_dict": true,
+      "scaler_state_dict": true,
+      "early_stopping_best_score": true,
+      "early_stopping_counter": true,
+      "early_stopping_best_state": true
+    }
+  },
+  "dataset_splits": {
+    "train_count": 3500,
+    "val_count": 500,
+    "test_count": 1000,
+    "train_val_overlap": 0,
+    "train_test_overlap": 0,
+    "val_test_overlap": 0,
+    "no_overlap": true
+  },
+  "summary": {
+    "checks": [
+      {
+        "name": "training_transforms",
+        "passed": true
+      },
+      {
+        "name": "validation_transforms",
+        "passed": true
+      },
+      {
+        "name": "architecture_keys",
+        "passed": true
+      },
+      {
+        "name": "architecture_shapes",
+        "passed": true
+      },
+      {
+        "name": "architecture_params",
+        "passed": true
+      },
+      {
+        "name": "loss_equivalence",
+        "passed": true
+      },
+      {
+        "name": "tta_transforms",
+        "passed": true
+      },
+      {
+        "name": "pos_weight",
+        "passed": true
+      },
+      {
+        "name": "seed_reproducibility",
+        "passed": true
+      },
+      {
+        "name": "checkpoint_content",
+        "passed": true
+      },
+      {
+        "name": "dataset_splits",
+        "passed": true
+      }
+    ],
+    "all_passed": true
+  }
+}
