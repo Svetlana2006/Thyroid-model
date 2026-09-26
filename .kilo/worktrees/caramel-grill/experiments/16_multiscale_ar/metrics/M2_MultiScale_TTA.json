@@ -1,0 +1,29 @@
+{
+  "model": "M2_MultiScale_TTA",
+  "multiscale_train": false,
+  "tta": true,
+  "seed": 0,
+  "best_val_auc": 0.9452693333333333,
+  "internal_auc": 0.9411612142047102,
+  "internal_accuracy": 0.861,
+  "internal_sensitivity": 0.8577291381668947,
+  "internal_specificity": 0.8698884758364313,
+  "internal_f1": 0.9002153625269204,
+  "external_auc": 0.8137992668271838,
+  "external_accuracy": 0.7646869983948635,
+  "external_sensitivity": 0.6611570247933884,
+  "external_specificity": 0.8304461942257217,
+  "external_f1": 0.6858122588941278,
+  "generalization_gap": 0.12736194737752637,
+  "ext_scale_aucs": {
+    "0.85x": 0.8115954100778725,
+    "1.00x": 0.8077842129237978,
+    "1.15x": 0.8006672306457561
+  },
+  "ext_avg_auc_tta": 0.8137992668271838,
+  "prediction_correlations": {
+    "0.85x_vs_1.00x": 0.9323,
+    "0.85x_vs_1.15x": 0.8953,
+    "1.00x_vs_1.15x": 0.9297
+  }
+}

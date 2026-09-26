@@ -1,0 +1,22 @@
+{
+  "model": "M1_Multilevel_Fusion",
+  "use_fusion": true,
+  "seed": 0,
+  "param_info": {
+    "total": 27792891,
+    "trainable_at_init": 273537,
+    "fusion_head": 273537
+  },
+  "best_val_auc": 0.947872,
+  "internal_auc": 0.9451888994553471,
+  "internal_accuracy": 0.887,
+  "internal_sensitivity": 0.8919288645690835,
+  "internal_specificity": 0.8736059479553904,
+  "internal_f1": 0.9202540578687368,
+  "external_auc": 0.8161024706622417,
+  "external_accuracy": 0.7547351524879615,
+  "external_sensitivity": 0.7181818181818181,
+  "external_specificity": 0.7779527559055118,
+  "external_f1": 0.6946442845723422,
+  "generalization_gap": 0.1290864287931054
+}

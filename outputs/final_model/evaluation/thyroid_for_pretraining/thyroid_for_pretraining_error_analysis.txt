@@ -1,0 +1,46 @@
+Total False Positives: 526
+Total False Negatives: 368
+
+--- Top False Positives ---
+ID: 1112 | Prob: 0.9712 | Max TTA Disagreement: 0.3047
+ID: 643 | Prob: 0.9704 | Max TTA Disagreement: 0.5009
+ID: 2623 | Prob: 0.9695 | Max TTA Disagreement: 0.4375
+ID: 3538 | Prob: 0.9635 | Max TTA Disagreement: 0.6771
+ID: 1286 | Prob: 0.9634 | Max TTA Disagreement: 0.5380
+ID: 3159 | Prob: 0.9629 | Max TTA Disagreement: 1.0431
+ID: 2830 | Prob: 0.9605 | Max TTA Disagreement: 0.5264
+ID: 1477 | Prob: 0.9604 | Max TTA Disagreement: 0.9407
+ID: 3147 | Prob: 0.9600 | Max TTA Disagreement: 0.1999
+ID: 3405 | Prob: 0.9598 | Max TTA Disagreement: 0.4941
+ID: 1816 | Prob: 0.9590 | Max TTA Disagreement: 0.7203
+ID: 1733 | Prob: 0.9582 | Max TTA Disagreement: 0.6037
+ID: 731 | Prob: 0.9582 | Max TTA Disagreement: 0.5963
+ID: 2800 | Prob: 0.9557 | Max TTA Disagreement: 0.4239
+ID: 1148 | Prob: 0.9548 | Max TTA Disagreement: 0.8924
+ID: 2171 | Prob: 0.9543 | Max TTA Disagreement: 0.2442
+ID: 21 | Prob: 0.9542 | Max TTA Disagreement: 0.4677
+ID: 3629 | Prob: 0.9523 | Max TTA Disagreement: 1.2018
+ID: 1123 | Prob: 0.9518 | Max TTA Disagreement: 0.4179
+ID: 445 | Prob: 0.9511 | Max TTA Disagreement: 0.2260
+
+--- Top False Negatives ---
+ID: 1059 | Prob: 0.0091 | Max TTA Disagreement: 1.1230
+ID: 971 | Prob: 0.0136 | Max TTA Disagreement: 0.6305
+ID: 2153 | Prob: 0.0156 | Max TTA Disagreement: 0.7535
+ID: 2768 | Prob: 0.0159 | Max TTA Disagreement: 1.9382
+ID: 3245 | Prob: 0.0184 | Max TTA Disagreement: 1.5299
+ID: 2490 | Prob: 0.0193 | Max TTA Disagreement: 1.4223
+ID: 152 | Prob: 0.0194 | Max TTA Disagreement: 1.0497
+ID: 1811 | Prob: 0.0197 | Max TTA Disagreement: 0.3324
+ID: 2981 | Prob: 0.0209 | Max TTA Disagreement: 1.5699
+ID: 974 | Prob: 0.0245 | Max TTA Disagreement: 1.0767
+ID: 1747 | Prob: 0.0315 | Max TTA Disagreement: 1.4961
+ID: 1901 | Prob: 0.0352 | Max TTA Disagreement: 1.6169
+ID: 2465 | Prob: 0.0366 | Max TTA Disagreement: 2.3843
+ID: 2123 | Prob: 0.0381 | Max TTA Disagreement: 1.9883
+ID: 299 | Prob: 0.0392 | Max TTA Disagreement: 0.8072
+ID: 2987 | Prob: 0.0403 | Max TTA Disagreement: 2.0305
+ID: 1831 | Prob: 0.0410 | Max TTA Disagreement: 1.3822
+ID: 402 | Prob: 0.0415 | Max TTA Disagreement: 2.2707
+ID: 2915 | Prob: 0.0448 | Max TTA Disagreement: 2.5972
+ID: 1099 | Prob: 0.0463 | Max TTA Disagreement: 4.7279

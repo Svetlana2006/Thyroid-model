@@ -1,0 +1,2 @@
+model,checkpoint,internal_auc,external_auc,generalization_gap,ext_auc_0.85x,ext_auc_1.00x,ext_auc_1.15x,ext_auc_avg,corr_0.85x_vs_1.00x,corr_0.85x_vs_1.15x,corr_1.00x_vs_1.15x
+Exp18_Fusion_TTA,experiments/17_multilevel_fusion/checkpoints/M1_Multilevel_Fusion_best.pt,0.9481333814756991,0.8205188607622395,0.1276145207134597,0.8129060107156028,0.8161024706622417,0.8135341966551701,0.8205188607622395,0.9351,0.905,0.9416

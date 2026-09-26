@@ -1,0 +1,286 @@
+{
+  "config": "A4S2V2",
+  "ar": "A4",
+  "ar_definition": "Longest side 256; pad canvas to 256x256; crop 224.",
+  "tta_scales": [
+    0.6,
+    0.8,
+    1.0,
+    1.2,
+    1.4
+  ],
+  "tta_views": 5,
+  "seeds": [
+    {
+      "config": "A4S2V2",
+      "ar": "A4",
+      "ar_definition": "Longest side 256; pad canvas to 256x256; crop 224.",
+      "tta_scales": [
+        0.6,
+        0.8,
+        1.0,
+        1.2,
+        1.4
+      ],
+      "tta_views": 5,
+      "seed": 0,
+      "best_epoch": 12,
+      "best_val_auc": 0.9456426666666666,
+      "training_time_sec": 1267.2413094043732,
+      "training_samples": 5618,
+      "validation_samples": 500,
+      "checkpoint": "/content/Thyroid-model/training_experiments/A4S2V2/seed0/best.pt",
+      "model": "MultiLevelSwin / Swin-Tiny",
+      "parameter_count": 27792891,
+      "torch": "2.11.0+cu128",
+      "cuda_available": true,
+      "device": "cuda",
+      "platform": "Linux-6.6.122+-x86_64-with-glibc2.39",
+      "sanity": false
+    },
+    {
+      "config": "A4S2V2",
+      "ar": "A4",
+      "ar_definition": "Longest side 256; pad canvas to 256x256; crop 224.",
+      "tta_scales": [
+        0.6,
+        0.8,
+        1.0,
+        1.2,
+        1.4
+      ],
+      "tta_views": 5,
+      "seed": 1,
+      "best_epoch": 14,
+      "best_val_auc": 0.947264,
+      "training_time_sec": 1369.8037023544312,
+      "training_samples": 5618,
+      "validation_samples": 500,
+      "checkpoint": "/content/Thyroid-model/training_experiments/A4S2V2/seed1/best.pt",
+      "model": "MultiLevelSwin / Swin-Tiny",
+      "parameter_count": 27792891,
+      "torch": "2.11.0+cu128",
+      "cuda_available": true,
+      "device": "cuda",
+      "platform": "Linux-6.6.122+-x86_64-with-glibc2.39",
+      "sanity": false
+    },
+    {
+      "config": "A4S2V2",
+      "ar": "A4",
+      "ar_definition": "Longest side 256; pad canvas to 256x256; crop 224.",
+      "tta_scales": [
+        0.6,
+        0.8,
+        1.0,
+        1.2,
+        1.4
+      ],
+      "tta_views": 5,
+      "seed": 2,
+      "best_epoch": 15,
+      "best_val_auc": 0.9444693333333333,
+      "training_time_sec": 1468.6958808898926,
+      "training_samples": 5618,
+      "validation_samples": 500,
+      "checkpoint": "/content/Thyroid-model/training_experiments/A4S2V2/seed2/best.pt",
+      "model": "MultiLevelSwin / Swin-Tiny",
+      "parameter_count": 27792891,
+      "torch": "2.11.0+cu128",
+      "cuda_available": true,
+      "device": "cuda",
+      "platform": "Linux-6.6.122+-x86_64-with-glibc2.39",
+      "sanity": false
+    },
+    {
+      "config": "A4S2V2",
+      "ar": "A4",
+      "ar_definition": "Longest side 256; pad canvas to 256x256; crop 224.",
+      "tta_scales": [
+        0.6,
+        0.8,
+        1.0,
+        1.2,
+        1.4
+      ],
+      "tta_views": 5,
+      "seed": 3,
+      "best_epoch": 16,
+      "best_val_auc": 0.9512,
+      "training_time_sec": 1558.091360092163,
+      "training_samples": 5618,
+      "validation_samples": 500,
+      "checkpoint": "/content/Thyroid-model/training_experiments/A4S2V2/seed3/best.pt",
+      "model": "MultiLevelSwin / Swin-Tiny",
+      "parameter_count": 27792891,
+      "torch": "2.11.0+cu128",
+      "cuda_available": true,
+      "device": "cuda",
+      "platform": "Linux-6.6.122+-x86_64-with-glibc2.39",
+      "sanity": false
+    },
+    {
+      "config": "A4S2V2",
+      "ar": "A4",
+      "ar_definition": "Longest side 256; pad canvas to 256x256; crop 224.",
+      "tta_scales": [
+        0.6,
+        0.8,
+        1.0,
+        1.2,
+        1.4
+      ],
+      "tta_views": 5,
+      "seed": 4,
+      "best_epoch": 17,
+      "best_val_auc": 0.9510293333333333,
+      "training_time_sec": 1450.3726968765259,
+      "training_samples": 5618,
+      "validation_samples": 500,
+      "checkpoint": "/content/Thyroid-model/training_experiments/A4S2V2/seed4/best.pt",
+      "model": "MultiLevelSwin / Swin-Tiny",
+      "parameter_count": 27792891,
+      "torch": "2.11.0+cu128",
+      "cuda_available": true,
+      "device": "cuda",
+      "platform": "Linux-6.6.122+-x86_64-with-glibc2.39",
+      "sanity": false
+    }
+  ],
+  "total_training_time_sec": 7114.204949617386,
+  "timestamp": "2026-09-16T17:05:24.965948+00:00",
+  "evaluations": {
+    "Internal": {
+      "config": "A4S2V2",
+      "dataset": "Internal",
+      "ar": "A4",
+      "tta_scales": [
+        0.6,
+        0.8,
+        1.0,
+        1.2,
+        1.4
+      ],
+      "tta_views": 5,
+      "per_seed_auc": [
+        0.9403526258778777,
+        0.9467297941913861,
+        0.9520390156581349,
+        0.9485097056026527,
+        0.9491148754824832
+      ],
+      "ensemble": {
+        "AUC": 0.9554208473395409,
+        "Accuracy": 0.883,
+        "F1": 0.9163688348820586,
+        "Sensitivity": 0.8768809849521204,
+        "Specificity": 0.8996282527881041,
+        "PRAUC": 0.9798624257153778,
+        "TP": 641,
+        "TN": 242,
+        "FP": 27,
+        "FN": 90,
+        "N": 1000,
+        "PatientLevel": false,
+        "PatientCount": null,
+        "PerScaleAUC": [
+          0.9130487848290522,
+          0.9408001464612818,
+          0.953025595126094,
+          0.9497047889787885,
+          0.9400017290567995
+        ]
+      },
+      "inference_time_sec": 138.28027248382568,
+      "timestamp": "2026-09-16T16:41:13.723641+00:00"
+    },
+    "Diveshzz": {
+      "config": "A4S2V2",
+      "dataset": "Diveshzz",
+      "ar": "A4",
+      "tta_scales": [
+        0.6,
+        0.8,
+        1.0,
+        1.2,
+        1.4
+      ],
+      "tta_views": 5,
+      "per_seed_auc": [
+        0.8191679139281145,
+        0.814758031279148,
+        0.8331376759723217,
+        0.8062953081278063,
+        0.8178694605323094
+      ],
+      "ensemble": {
+        "AUC": 0.8296245200754864,
+        "Accuracy": 0.7784911717495987,
+        "F1": 0.7115384615384616,
+        "Sensitivity": 0.7033057851239669,
+        "Specificity": 0.826246719160105,
+        "PRAUC": 0.7790724882690931,
+        "TP": 851,
+        "TN": 1574,
+        "FP": 331,
+        "FN": 359,
+        "N": 3115,
+        "PatientLevel": false,
+        "PatientCount": null,
+        "PerScaleAUC": [
+          0.8105210299125832,
+          0.8259343615105963,
+          0.8226298778768356,
+          0.8172271751155074,
+          0.7994269104791654
+        ]
+      },
+      "inference_time_sec": 419.75937724113464,
+      "timestamp": "2026-09-16T16:48:24.546303+00:00"
+    },
+    "ThyroidPretrain": {
+      "config": "A4S2V2",
+      "dataset": "ThyroidPretrain",
+      "ar": "A4",
+      "tta_scales": [
+        0.6,
+        0.8,
+        1.0,
+        1.2,
+        1.4
+      ],
+      "tta_views": 5,
+      "per_seed_auc": [
+        0.8146168924553451,
+        0.7981960636132943,
+        0.8220533307290738,
+        0.8011072970069576,
+        0.8141076015471005
+      ],
+      "ensemble": {
+        "AUC": 0.8238035999017927,
+        "Accuracy": 0.754390779363337,
+        "F1": 0.791521080829257,
+        "Sensitivity": 0.8482276585122317,
+        "Specificity": 0.6398537477148081,
+        "PRAUC": 0.8305338827638086,
+        "TP": 1699,
+        "TN": 1050,
+        "FP": 591,
+        "FN": 304,
+        "N": 3644,
+        "PatientLevel": true,
+        "PatientCount": 3644,
+        "PerScaleAUC": [
+          0.7665030485959056,
+          0.8073143179806768,
+          0.8231440164555117,
+          0.8176163542620256,
+          0.8084177816152067
+        ]
+      },
+      "inference_time_sec": 970.161141872406,
+      "timestamp": "2026-09-16T17:05:24.950360+00:00"
+    }
+  }
+}

@@ -1,0 +1,40 @@
+{
+  "AUITD": {
+    "n_images": 2289,
+    "mean_intensity_mean": 57.828033518274836,
+    "mean_intensity_std": 18.496427124453664,
+    "std_intensity_mean": 44.183040410579245,
+    "std_intensity_std": 6.7490588996556395,
+    "entropy_mean": 6.338468361991121,
+    "entropy_std": 0.8849604202233331,
+    "edge_density_mean": 0.07186577102884786,
+    "edge_density_std": 0.04147163507865244,
+    "hf_energy_mean": 2037.1809597291117,
+    "hf_energy_std": 1296.4037394778245,
+    "aspect_ratio_hw_mean": 0.9126885298174441,
+    "aspect_ratio_hw_std": 0.277936806540848,
+    "width_mean": 471.3665356050677,
+    "width_std": 129.00145703883402,
+    "height_mean": 406.0974224552206,
+    "height_std": 101.71898533093578
+  },
+  "TN5000": {
+    "n_images": 5000,
+    "mean_intensity_mean": 58.886712607798735,
+    "mean_intensity_std": 15.77168949029122,
+    "std_intensity_mean": 46.400411875885865,
+    "std_intensity_std": 8.097106473646178,
+    "entropy_mean": 6.785546239131258,
+    "entropy_std": 0.5713867423087028,
+    "edge_density_mean": 0.02136722957706704,
+    "edge_density_std": 0.008961142201528478,
+    "hf_energy_mean": 131.05560211168554,
+    "hf_energy_std": 61.88796621041671,
+    "aspect_ratio_hw_mean": 0.7164136311173488,
+    "aspect_ratio_hw_std": 0.04442823184833489,
+    "width_mean": 715.136,
+    "width_std": 74.77881186539406,
+    "height_mean": 510.7404,
+    "height_std": 52.864818242759526
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "config": "A4S5V2",
+  "ar": "A4",
+  "ar_definition": "Longest side 256; pad canvas to 256x256; crop 224.",
+  "tta_scales": [
+    0.6,
+    0.85,
+    1.0,
+    1.25,
+    1.4
+  ],
+  "tta_views": 5,
+  "seed": 3,
+  "best_epoch": 14,
+  "best_val_auc": 0.949024,
+  "training_time_sec": 1390.2079787254333,
+  "training_samples": 5618,
+  "validation_samples": 500,
+  "checkpoint": "/content/Thyroid-model/training_experiments/A4S5V2/seed3/best.pt",
+  "model": "MultiLevelSwin / Swin-Tiny",
+  "parameter_count": 27792891,
+  "torch": "2.11.0+cu128",
+  "cuda_available": true,
+  "device": "cuda",
+  "platform": "Linux-6.6.122+-x86_64-with-glibc2.39",
+  "sanity": false
+}

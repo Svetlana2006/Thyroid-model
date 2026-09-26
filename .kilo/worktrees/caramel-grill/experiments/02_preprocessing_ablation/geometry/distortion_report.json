@@ -1,0 +1,23 @@
+{
+  "A_Current": {
+    "median_rel_distortion": 0.43599994323431046,
+    "mean_rel_distortion": 0.4016968279829745,
+    "max_rel_distortion": 2.57510188367858,
+    "iqr_rel_distortion": 5.319925752145238e-07,
+    "zero_distortion_fraction": 0.0
+  },
+  "B_AR_Preserving": {
+    "median_rel_distortion": 0.0015312982788522212,
+    "mean_rel_distortion": 0.0031383834040055866,
+    "max_rel_distortion": 1.485813099843264,
+    "iqr_rel_distortion": 4.273415800870248e-07,
+    "zero_distortion_fraction": 0.0
+  },
+  "E_Letterbox_224": {
+    "median_rel_distortion": 7.146630489610222e-05,
+    "mean_rel_distortion": 0.00013434263448747143,
+    "max_rel_distortion": 0.0029096675238181905,
+    "iqr_rel_distortion": 3.0766663781558307e-07,
+    "zero_distortion_fraction": 0.795655901686196
+  }
+}

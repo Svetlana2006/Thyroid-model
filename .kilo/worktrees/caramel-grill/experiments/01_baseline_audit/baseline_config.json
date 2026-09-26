@@ -1,0 +1,100 @@
+{
+  "experiment": "baseline_audit",
+  "description": "Immutable record of current training pipeline configuration",
+  "datasets": {
+    "TN5000": {
+      "root": "data_raw/TN5000_forReview",
+      "format": "VOC (XML annotations + JPEG images)",
+      "train": 3500,
+      "val": 500,
+      "test": 1000,
+      "train_benign": 1032,
+      "train_malignant": 2468,
+      "annotations": "bounding box + binary label (0=benign, 1=malignant)",
+      "clinical_feature_labels": "NONE"
+    },
+    "AUITD": {
+      "root": "data_raw/auitd_dataset",
+      "format": "folder-based (benign/malignant/normal thyroid)",
+      "total_used": 2118,
+      "benign": 912,
+      "malignant": 1206,
+      "excluded": "171 'normal thyroid' images",
+      "annotations": "folder-level binary label only, NO bounding boxes"
+    },
+    "DDTI_unique": {
+      "root": "data_raw/ddti_unique_dataset",
+      "format": "folder-based",
+      "total": 1,
+      "benign": 1,
+      "malignant": 0,
+      "note": "Effectively empty — deduplication removed nearly all images"
+    }
+  },
+  "preprocessing": {
+    "train": "Rotate(15) -> HFlip(0.5) -> ColorJitter(0.15,0.15) -> RandomResizedCrop(224, scale=0.9-1.0) -> GaussBlur(0.2) -> ImageNet Normalize -> ToTensor",
+    "val_test": "Resize(256,256) -> CenterCrop(224) -> ImageNet Normalize -> ToTensor",
+    "resize_type": "ANISOTROPIC (A.Resize stretches to square)",
+    "crop_nodule": false,
+    "imagenet_mean": [0.485, 0.456, 0.406],
+    "imagenet_std": [0.229, 0.224, 0.225]
+  },
+  "models": {
+    "resnet50": {
+      "source": "torchvision IMAGENET1K_V2",
+      "feature_dim": 2048,
+      "head": "Linear(2048->256) -> ReLU -> Dropout(0.3) -> Linear(256->1)",
+      "batch_size": 32
+    },
+    "efficientnet_b3": {
+      "source": "timm efficientnet_b3 pretrained",
+      "native_resolution": 288,
+      "used_resolution": 224,
+      "feature_dim": 1536,
+      "head": "Linear(1536->256) -> ReLU -> Dropout(0.3) -> Linear(256->1)",
+      "batch_size": 32
+    },
+    "swin_tiny": {
+      "source": "timm swin_tiny_patch4_window7_224 pretrained",
+      "native_resolution": 224,
+      "feature_dim": 768,
+      "head": "Linear(768->256) -> ReLU -> Dropout(0.3) -> Linear(256->1)",
+      "batch_size": 16
+    }
+  },
+  "training": {
+    "loss": "BCEWithLogitsLoss",
+    "pos_weight": 0.5294,
+    "pos_weight_source": "combined TN5000+AUITD+DDTI (1945 benign / 3674 malignant)",
+    "label_smoothing_eps": 0.05,
+    "optimizer": "AdamW",
+    "lr_head": 3e-4,
+    "lr_backbone": 3e-5,
+    "weight_decay": 1e-4,
+    "scheduler": "CosineAnnealingWarmRestarts(T_0=10, T_mult=2)",
+    "grad_clip_norm": 1.0,
+    "max_epochs": 25,
+    "early_stopping_patience": 10,
+    "early_stopping_metric": "val_auc",
+    "early_stopping_min_delta": 0.001,
+    "seeds": [0, 1, 2],
+    "staged_unfreezing": true,
+    "amp": "float16 on GPU, float32 on CPU"
+  },
+  "evaluation": {
+    "threshold_selection": "Youden J on val set",
+    "calibration": "temperature scaling fit on val, applied to test",
+    "bootstrap_ci": "1000 resamples",
+    "ensemble": "soft vote (9 models) and validation-fitted weighted vote"
+  },
+  "results_internal_test": {
+    "resnet50_avg_seeds_auc": 0.922,
+    "efficientnet_b3_avg_seeds_auc": 0.899,
+    "swin_tiny_avg_seeds_auc": 0.948,
+    "weighted_ensemble_auc": 0.954
+  },
+  "results_external_divesh": {
+    "ensemble_auc": 0.662,
+    "delta_auc_ensemble": 0.292
+  }
+}
