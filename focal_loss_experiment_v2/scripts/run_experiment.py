@@ -80,11 +80,16 @@ except ImportError:
     HAS_TQDM = False
 
 
-def _load_checkpoint(path, map_location=DEVICE):
+def _is_git_lfs_pointer(path):
     checkpoint_path = Path(path)
     with checkpoint_path.open("rb") as checkpoint_file:
         header = checkpoint_file.read(128)
-    if header.startswith(b"version https://git-lfs.github.com/spec/v1"):
+    return header.startswith(b"version https://git-lfs.github.com/spec/v1")
+
+
+def _load_checkpoint(path, map_location=DEVICE):
+    checkpoint_path = Path(path)
+    if _is_git_lfs_pointer(checkpoint_path):
         raise RuntimeError(
             f"Checkpoint '{checkpoint_path}' is a Git LFS pointer, not the checkpoint data. "
             "Run `git lfs pull` after the repository owner's LFS access is restored, then retry. "
@@ -618,7 +623,15 @@ def train_seed(seed: int = 0):
     early_stopping = EarlyStopping(patience=patience, min_delta=min_delta)
 
     # Resume from checkpoint if exists (with version check)
-    if last_ckpt.exists():
+    resume_from_checkpoint = last_ckpt.exists()
+    if resume_from_checkpoint and _is_git_lfs_pointer(last_ckpt):
+        print(
+            f"  [WARNING] {last_ckpt} is a Git LFS pointer, not a usable checkpoint. "
+            "Starting fresh; the pointer will be replaced when the first checkpoint is saved."
+        )
+        resume_from_checkpoint = False
+
+    if resume_from_checkpoint:
         print(f"Resuming from checkpoint: {last_ckpt}")
         ckpt = _load_checkpoint(last_ckpt)
         # Verify checkpoint compatibility
