@@ -80,6 +80,19 @@ except ImportError:
     HAS_TQDM = False
 
 
+def _load_checkpoint(path, map_location=DEVICE):
+    checkpoint_path = Path(path)
+    with checkpoint_path.open("rb") as checkpoint_file:
+        header = checkpoint_file.read(128)
+    if header.startswith(b"version https://git-lfs.github.com/spec/v1"):
+        raise RuntimeError(
+            f"Checkpoint '{checkpoint_path}' is a Git LFS pointer, not the checkpoint data. "
+            "Run `git lfs pull` after the repository owner's LFS access is restored, then retry. "
+            "To train from scratch instead, remove or rename this pointer file before training."
+        )
+    return torch.load(checkpoint_path, map_location=map_location, weights_only=False)
+
+
 class MultiLevelSwin(nn.Module):
     def __init__(self, dropout: float = 0.3):
         super().__init__()
@@ -515,7 +528,7 @@ def train_seed(seed: int = 0):
     try:
         main_ckpt_path = ROOT / "outputs" / "final_model" / "seed0" / "best.pt"
         if main_ckpt_path.exists():
-            main_ckpt = torch.load(main_ckpt_path, map_location=DEVICE, weights_only=False)
+            main_ckpt = _load_checkpoint(main_ckpt_path)
             main_state = main_ckpt.get("model_state_dict", main_ckpt)
             focal_state = model.state_dict()
             
@@ -607,7 +620,7 @@ def train_seed(seed: int = 0):
     # Resume from checkpoint if exists (with version check)
     if last_ckpt.exists():
         print(f"Resuming from checkpoint: {last_ckpt}")
-        ckpt = torch.load(last_ckpt, map_location=DEVICE, weights_only=False)
+        ckpt = _load_checkpoint(last_ckpt)
         # Verify checkpoint compatibility
         ckpt_config = ckpt.get("config", {})
         required_config = {
@@ -876,7 +889,7 @@ def evaluate_tn5000(checkpoint_path: str, out_dir: Path = None):
     print("EVALUATING ON TN5000")
     print("=" * 70)
     model = MultiLevelSwin(dropout=0.0).to(DEVICE)
-    ckpt = torch.load(checkpoint_path, map_location=DEVICE, weights_only=False)
+    ckpt = _load_checkpoint(checkpoint_path)
     model.load_state_dict(ckpt["model_state_dict"])
     model.eval()
     ds = TN5000TestDataset(str(TN5000_ROOT))
@@ -933,7 +946,7 @@ def evaluate_diveshzz(checkpoint_path: str, out_dir: Path = None):
         return None
     print(f"  Using Diveshzz path: {divesh_path}")
     model = MultiLevelSwin(dropout=0.0).to(DEVICE)
-    ckpt = torch.load(checkpoint_path, map_location=DEVICE, weights_only=False)
+    ckpt = _load_checkpoint(checkpoint_path)
     model.load_state_dict(ckpt["model_state_dict"])
     model.eval()
     ds = DiveshzzDataset(str(divesh_path))
@@ -1015,7 +1028,7 @@ def evaluate_thyroid_pretraining(checkpoint_path: str, out_dir: Path = None):
             return tensors, torch.tensor(s["label"], dtype=torch.float32), s["id"]
     
     model = MultiLevelSwin(dropout=0.0).to(DEVICE)
-    ckpt = torch.load(checkpoint_path, map_location=DEVICE, weights_only=False)
+    ckpt = _load_checkpoint(checkpoint_path)
     model.load_state_dict(ckpt["model_state_dict"])
     model.eval()
     ds = FlexibleThyroidDataset(str(thyroid_path))
