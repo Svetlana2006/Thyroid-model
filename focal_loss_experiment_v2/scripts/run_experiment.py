@@ -1,18 +1,19 @@
 """
-Corrected Focal Loss Experiment Runner (v2)
+Corrected Focal Loss Experiment Runner (v2) - Multi-Seed (Seeds 0-4)
 
 Controlled experiment: MultiLevelSwin (same architecture as main model) with Binary Focal Loss
-gamma=2.0 instead of BCEWithLogitsLoss. Trains seed 0 only, evaluates on TN5000,
+gamma=2.0 instead of BCEWithLogitsLoss. Trains all 5 seeds (0, 1, 2, 3, 4) sequentially in one run,
+preserving already-completed seeds, and evaluates individual seeds plus 5-seed ensemble on TN5000,
 Diveshzz, and Thyroid for Pretraining.
 
-This corrected version addresses implementation issues found in the previous focal run:
-1. Architecture matches main model (bias=False for all projection layers) - VERIFIED by state_dict key/shape comparison
-2. Seed 0 is reproducible with proper seed setting - VERIFIED by RNG state save/restore
-3. pos_weight semantics match BCEWithLogitsLoss (applies to positive class only) - VERIFIED by gamma=0 equivalence test
-4. Label smoothing handled consistently with main model - VERIFIED by same formula
-5. Uses established evaluation pipeline and TTA exactly as main model - VERIFIED by matching TTA transforms
-6. Correct checkpoint/resume logic preserving states - VERIFIED by RNG state + early stopping state
-7. Architecture verified to match main model exactly (27,792,891 params) - VERIFIED by parameter count
+Key features:
+1. Multi-seed training (seeds 0-4) with reproducible RNG state handling.
+2. Completed seed preservation: skips already trained seeds unless --force is specified.
+3. Architecture matches main model (bias=False for all projection layers, 27,792,891 params).
+4. BinaryFocalLoss pos_weight semantics match BCEWithLogitsLoss.
+5. Consistent label smoothing (eps=0.05).
+6. TTA and evaluation pipeline matching main model.
+7. Both individual seed metrics and 5-seed ensemble evaluation.
 """
 
 import copy
@@ -473,7 +474,7 @@ def save_report(metrics, output_path: Path, title: str):
     output_path.write_text(report, encoding="utf-8")
 
 
-def train_seed(seed: int = 0):
+def train_seed(seed: int = 0, force: bool = False):
     print("=" * 70)
     print(f"FOCAL LOSS EXPERIMENT V2 - SEED {seed} TRAINING")
     print("=" * 70)
@@ -488,6 +489,26 @@ def train_seed(seed: int = 0):
     clean_dir.mkdir(parents=True, exist_ok=True)
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
     LOG_DIR.mkdir(parents=True, exist_ok=True)
+
+    summary_file = clean_dir / "focal_summary.json"
+    last_ckpt = clean_dir / "focal_last.pt"
+    best_ckpt = clean_dir / "focal_best.pt"
+
+    # Completed seed preservation: skip retraining if already complete unless force=True
+    if not force and summary_file.exists():
+        try:
+            with open(summary_file, "r", encoding="utf-8") as f:
+                saved_summary = json.load(f)
+            if "best_val_auc" in saved_summary:
+                best_auc = saved_summary.get("best_val_auc", 0.0)
+                ep_trained = saved_summary.get("epochs_trained", "N/A")
+                print(f"[PRESERVED] Focal Loss V2 | seed {seed}/4 already complete (val AUC={best_auc:.4f}, epochs={ep_trained}); preserving it.")
+                print(f"  Summary: {summary_file}")
+                print(f"  Checkpoint: {best_ckpt}")
+                print("=" * 70)
+                return saved_summary
+        except Exception as e:
+            print(f"  [WARNING] Could not parse existing summary {summary_file}: {e}. Training will proceed.")
 
     # Same seed setting as main model (train.py set_seed)
     set_seed(seed)
@@ -531,8 +552,10 @@ def train_seed(seed: int = 0):
     # Architecture structural verification: state_dict key/shape comparison with main model
     print(f"\nArchitecture structural verification:")
     try:
-        main_ckpt_path = ROOT / "outputs" / "final_model" / "seed0" / "best.pt"
-        if main_ckpt_path.exists():
+        main_ckpt_path = ROOT / "outputs" / "final_model" / f"seed{seed}" / "best.pt"
+        if not main_ckpt_path.exists():
+            main_ckpt_path = ROOT / "outputs" / "final_model" / "seed0" / "best.pt"
+        if main_ckpt_path.exists() and not _is_git_lfs_pointer(main_ckpt_path):
             main_ckpt = _load_checkpoint(main_ckpt_path)
             main_state = main_ckpt.get("model_state_dict", main_ckpt)
             focal_state = model.state_dict()
@@ -559,7 +582,7 @@ def train_seed(seed: int = 0):
                 if shape_mismatches:
                     print(f"  [FAIL] Shape mismatches ({len(shape_mismatches)}): {shape_mismatches[:5]}...")
         else:
-            print(f"  [SKIP] Main model checkpoint not found at {main_ckpt_path}")
+            print(f"  [SKIP] Usable main model checkpoint not found at {main_ckpt_path}")
     except Exception as e:
         print(f"  [WARNING] Could not verify architecture structurally: {e}")
 
@@ -572,9 +595,6 @@ def train_seed(seed: int = 0):
     val_ds = TN5000Dataset(str(TN5000_ROOT), str(TN5000_ROOT / "ImageSets" / "Main" / "val.txt"), make_val_transform())
     val_loader = DataLoader(val_ds, batch_size=BATCH_SIZE * 2, shuffle=False, num_workers=NUM_WORKERS, pin_memory=USE_AMP)
 
-    # Checkpoint paths (per-seed clean directory)
-    last_ckpt = clean_dir / "focal_last.pt"
-    best_ckpt = clean_dir / "focal_best.pt"
     history = {"train_loss": [], "train_auc": [], "val_loss": [], "val_auc": []}
     start_epoch = 1
     best_val_auc = -1e9
@@ -595,6 +615,7 @@ def train_seed(seed: int = 0):
         "grad_clip_norm": 1.0,
         "dropout": 0.3,
         "tta_scales": TTA_SCALES,
+        "seed": seed,
     }
 
     # Early stopping (mechanical copy of src/trainer.py EarlyStopping)
@@ -656,10 +677,7 @@ def train_seed(seed: int = 0):
                 print(f"  [WARNING] Config mismatch: {key} = {ckpt_config.get(key)}, expected {expected}. Starting fresh.")
                 mismatch = True
         if mismatch:
-            # Config incompatible — discard checkpoint and start fresh.
-            # Must explicitly initialize optimizer/scheduler/scaler here;
-            # the outer else-branch (fresh start) is only reached when no
-            # checkpoint exists at all, so without this we'd get a NameError.
+            # Config incompatible -- discard checkpoint and start fresh.
             start_epoch = 1
             history = {"train_loss": [], "train_auc": [], "val_loss": [], "val_auc": []}
             early_stopping = EarlyStopping(patience=patience, min_delta=min_delta)
@@ -672,30 +690,31 @@ def train_seed(seed: int = 0):
             print(f"  Starting fresh (config mismatch).")
         else:
             saved_epoch = ckpt["epoch"]
-            # Handle completed checkpoint (epoch >= EPOCHS)
-            if saved_epoch >= EPOCHS:
-                print(f"  Checkpoint at epoch {saved_epoch} (>= max epochs {EPOCHS}) - training already complete.")
+            early_stopping_counter = ckpt.get("early_stopping_counter", 0)
+            # Handle completed checkpoint (epoch >= EPOCHS or early stopping reached)
+            if saved_epoch >= EPOCHS or early_stopping_counter >= patience:
+                print(f"  Checkpoint at epoch {saved_epoch} (>= max epochs {EPOCHS} or early stopped at {early_stopping_counter}/{patience}) - training already complete.")
                 if "model_state_dict" in ckpt:
                     model.load_state_dict(ckpt["model_state_dict"])
                 if "early_stopping_best_state" in ckpt and ckpt["early_stopping_best_state"] is not None:
                     early_stopping.best_state = ckpt["early_stopping_best_state"]
                 early_stopping.best_score = ckpt.get("early_stopping_best_score", -np.inf)
-                early_stopping.counter = ckpt.get("early_stopping_counter", 0)
+                early_stopping.counter = early_stopping_counter
                 history = ckpt.get("history", history)
                 early_stopping.restore_best(model)
                 best_val_auc = early_stopping.best_score
                 print(f"  Training already complete at epoch {saved_epoch}. Best val AUC = {best_val_auc:.4f}")
-                summary = {"best_val_auc": best_val_auc, "epochs_trained": len(history["val_auc"]), "history": history, "config": config}
+                summary = {"seed": seed, "best_val_auc": best_val_auc, "epochs_trained": len(history.get("val_auc", [])), "history": history, "config": config}
                 with open(clean_dir / "focal_summary.json", "w") as f:
                     json.dump(summary, f, indent=2)
                 print("=" * 70)
-                print(f"Training complete (restored from completed checkpoint). Best val AUC: {best_val_auc:.4f}")
+                print(f"Training seed {seed} complete (restored from completed checkpoint). Best val AUC: {best_val_auc:.4f}")
                 print(f"Checkpoint: {best_ckpt}")
                 print(f"Total parameters trained: {n_params:,}")
                 print("=" * 70)
                 return summary
             
-            # Normal resume: epoch < EPOCHS
+            # Normal resume: epoch < EPOCHS and not yet stopped
             start_epoch = ckpt["epoch"] + 1
             history = ckpt.get("history", history)
             
@@ -748,7 +767,7 @@ def train_seed(seed: int = 0):
         # Rebuild optimizer only when staged unfreezing adds new parameters (mechanical copy)
         _curr_trainable = sum(1 for p in model.parameters() if p.requires_grad)
         if _curr_trainable != _prev_trainable:
-            print(f"  [unfreeze] Trainable params {_prev_trainable}→{_curr_trainable}. Rebuilding optimizer.")
+            print(f"  [unfreeze] Trainable params {_prev_trainable}->{_curr_trainable}. Rebuilding optimizer.")
             optimizer, scheduler = build_optimizer_and_scheduler(
                 model, LR_HEAD, LR_HEAD * 0.1, 1e-4, WARMUP_EPOCHS, 2, last_epoch=epoch - 1
             )
@@ -774,7 +793,7 @@ def train_seed(seed: int = 0):
             if USE_AMP:
                 with torch.amp.autocast("cuda"):
                     logits = model(images).squeeze(1)
-                    # BinaryFocalLoss applies label smoothing internally — pass RAW labels
+                    # BinaryFocalLoss applies label smoothing internally -- pass RAW labels
                     loss = loss_fn(logits, labels)
                 scaler.scale(loss).backward()
                 scaler.unscale_(optimizer)
@@ -783,7 +802,7 @@ def train_seed(seed: int = 0):
                 scaler.update()
             else:
                 logits = model(images).squeeze(1)
-                # BinaryFocalLoss applies label smoothing internally — pass RAW labels
+                # BinaryFocalLoss applies label smoothing internally -- pass RAW labels
                 loss = loss_fn(logits, labels)
                 loss.backward()
                 nn.utils.clip_grad_norm_(model.parameters(), 1.0)
@@ -815,11 +834,11 @@ def train_seed(seed: int = 0):
             if USE_AMP:
                 with torch.amp.autocast("cuda"):
                     logits = model(images).squeeze(1)
-                    # BinaryFocalLoss applies label smoothing internally — pass RAW labels
+                    # BinaryFocalLoss applies label smoothing internally -- pass RAW labels
                     loss = loss_fn(logits, labels)
             else:
                 logits = model(images).squeeze(1)
-                # BinaryFocalLoss applies label smoothing internally — pass RAW labels
+                # BinaryFocalLoss applies label smoothing internally -- pass RAW labels
                 loss = loss_fn(logits, labels)
 
             total_loss += loss.item() * images.size(0)
@@ -837,7 +856,7 @@ def train_seed(seed: int = 0):
         elapsed = time.time() - t0
         star = " *" if early_stopping.counter == 0 or epoch == 1 else ""
         print(
-            f"[seed0] Epoch {epoch:03d}/{EPOCHS} | "
+            f"[seed{seed}] Epoch {epoch:03d}/{EPOCHS} | "
             f"Train AUC={train_auc:.4f}  Loss={train_loss:.4f} | "
             f"Val AUC={val_auc:.4f}  Loss={val_loss:.4f} | "
             f"{elapsed/60:.1f}min{star}"
@@ -879,30 +898,99 @@ def train_seed(seed: int = 0):
         )
 
         if should_stop:
-            print(f"[seed0] Early stopping triggered at epoch {epoch}. Best val AUC = {early_stopping.best_score:.4f}")
+            print(f"[seed{seed}] Early stopping triggered at epoch {epoch}. Best val AUC = {early_stopping.best_score:.4f}")
             break
 
     early_stopping.restore_best(model)
     history["best_val_auc"] = early_stopping.best_score
 
-    summary = {"best_val_auc": early_stopping.best_score, "epochs_trained": len(history["val_auc"]), "history": history, "config": config}
+    summary = {
+        "seed": seed,
+        "best_val_auc": early_stopping.best_score,
+        "epochs_trained": len(history["val_auc"]),
+        "history": history,
+        "config": config,
+    }
     with open(clean_dir / "focal_summary.json", "w") as f:
         json.dump(summary, f, indent=2)
 
     print("=" * 70)
-    print(f"Training complete. Best val AUC: {early_stopping.best_score:.4f}")
+    print(f"Training seed {seed} complete. Best val AUC: {early_stopping.best_score:.4f}")
     print(f"Checkpoint: {best_ckpt}")
     print(f"Total parameters trained: {n_params:,}")
     print("=" * 70)
     return summary
 
 
+def train_all_seeds(seeds=None, force: bool = False):
+    """
+    Train all specified seeds sequentially in one run (default: seeds 0 through 4).
+    Preserves already completed seeds unless force=True.
+    Saves an aggregate training summary to focal_training_summary.json.
+    """
+    if seeds is None:
+        seeds = list(range(5))
+
+    print("\n" + "=" * 70)
+    print("FOCAL LOSS V2 -- MULTI-SEED SEQUENTIAL TRAINING")
+    print(f"  Target seeds: {seeds}")
+    print(f"  Force retrain: {force}")
+    print("=" * 70)
+
+    summaries = []
+    total_t0 = time.time()
+    for s in seeds:
+        summary = train_seed(seed=s, force=force)
+        summaries.append({
+            "seed": s,
+            "best_val_auc": summary.get("best_val_auc", 0.0),
+            "epochs_trained": summary.get("epochs_trained", 0),
+            "checkpoint": str((EXP_DIR / f"seed{s}_clean" / "focal_best.pt").resolve()),
+        })
+
+    total_time = time.time() - total_t0
+    val_aucs = [s["best_val_auc"] for s in summaries if "best_val_auc" in s]
+    mean_val_auc = float(np.mean(val_aucs)) if val_aucs else float("nan")
+    std_val_auc = float(np.std(val_aucs)) if val_aucs else float("nan")
+
+    overall_summary = {
+        "experiment": "focal_loss_v2",
+        "gamma": GAMMA,
+        "seeds": summaries,
+        "mean_best_val_auc": mean_val_auc,
+        "std_best_val_auc": std_val_auc,
+        "total_training_time_sec": total_time,
+        "timestamp": time.strftime("%Y-%m-%dT%H:%M:%S%z"),
+    }
+    summary_file = EXP_DIR / "focal_training_summary.json"
+    with open(summary_file, "w", encoding="utf-8") as f:
+        json.dump(overall_summary, f, indent=2)
+
+    print("\n" + "=" * 70)
+    print("FOCAL LOSS V2 -- ALL SEEDS TRAINING FINISHED")
+    print("=" * 70)
+    for s in summaries:
+        print(f"  Seed {s['seed']}: Best Val AUC = {s['best_val_auc']:.4f} (epochs: {s['epochs_trained']})")
+    print(f"  Mean Best Val AUC: {mean_val_auc:.4f} \u00b1 {std_val_auc:.4f}")
+    print(f"  Total time: {total_time / 60:.1f} min")
+    print(f"  Multi-seed summary saved -> {summary_file}")
+    print("=" * 70)
+    return overall_summary
+
+
 def evaluate_tn5000(checkpoint_path: str, out_dir: Path = None):
     print("=" * 70)
     print("EVALUATING ON TN5000")
     print("=" * 70)
+    ckpt_file = Path(checkpoint_path)
+    if not ckpt_file.exists():
+        print(f"  [SKIP] Checkpoint not found: {ckpt_file}")
+        return None
+    if _is_git_lfs_pointer(ckpt_file):
+        print(f"  [SKIP] '{ckpt_file}' is a Git LFS pointer, not a usable checkpoint.")
+        return None
     model = MultiLevelSwin(dropout=0.0).to(DEVICE)
-    ckpt = _load_checkpoint(checkpoint_path)
+    ckpt = _load_checkpoint(ckpt_file)
     model.load_state_dict(ckpt["model_state_dict"])
     model.eval()
     ds = TN5000TestDataset(str(TN5000_ROOT))
@@ -950,6 +1038,13 @@ def evaluate_diveshzz(checkpoint_path: str, out_dir: Path = None):
     print("=" * 70)
     print("EVALUATING ON DIVESHZZ")
     print("=" * 70)
+    ckpt_file = Path(checkpoint_path)
+    if not ckpt_file.exists():
+        print(f"  [SKIP] Checkpoint not found: {ckpt_file}")
+        return None
+    if _is_git_lfs_pointer(ckpt_file):
+        print(f"  [SKIP] '{ckpt_file}' is a Git LFS pointer, not a usable checkpoint.")
+        return None
     # Download dataset directly via kagglehub (matching external_validation_divesh.py)
     try:
         import kagglehub
@@ -959,7 +1054,7 @@ def evaluate_diveshzz(checkpoint_path: str, out_dir: Path = None):
         return None
     print(f"  Using Diveshzz path: {divesh_path}")
     model = MultiLevelSwin(dropout=0.0).to(DEVICE)
-    ckpt = _load_checkpoint(checkpoint_path)
+    ckpt = _load_checkpoint(ckpt_file)
     model.load_state_dict(ckpt["model_state_dict"])
     model.eval()
     ds = DiveshzzDataset(str(divesh_path))
@@ -1007,6 +1102,13 @@ def evaluate_thyroid_pretraining(checkpoint_path: str, out_dir: Path = None):
     print("=" * 70)
     print("EVALUATING ON THYROID FOR PRETRAINING")
     print("=" * 70)
+    ckpt_file = Path(checkpoint_path)
+    if not ckpt_file.exists():
+        print(f"  [SKIP] Checkpoint not found: {ckpt_file}")
+        return None
+    if _is_git_lfs_pointer(ckpt_file):
+        print(f"  [SKIP] '{ckpt_file}' is a Git LFS pointer, not a usable checkpoint.")
+        return None
     # Download dataset directly via kagglehub (matching external_validation_kaggle.py)
     try:
         import kagglehub
@@ -1041,7 +1143,7 @@ def evaluate_thyroid_pretraining(checkpoint_path: str, out_dir: Path = None):
             return tensors, torch.tensor(s["label"], dtype=torch.float32), s["id"]
     
     model = MultiLevelSwin(dropout=0.0).to(DEVICE)
-    ckpt = _load_checkpoint(checkpoint_path)
+    ckpt = _load_checkpoint(ckpt_file)
     model.load_state_dict(ckpt["model_state_dict"])
     model.eval()
     ds = FlexibleThyroidDataset(str(thyroid_path))
@@ -1085,16 +1187,273 @@ def evaluate_thyroid_pretraining(checkpoint_path: str, out_dir: Path = None):
     return metrics
 
 
+def evaluate_ensemble_tn5000(checkpoints: list, out_dir: Path = None):
+    """Evaluate multi-seed ensemble on TN5000."""
+    print("=" * 70)
+    print(f"EVALUATING {len(checkpoints)}-SEED ENSEMBLE ON TN5000")
+    print("=" * 70)
+    ds = TN5000TestDataset(str(TN5000_ROOT))
+    loader = DataLoader(ds, batch_size=4, shuffle=False, num_workers=NUM_WORKERS)
+
+    all_seed_scale_logits = defaultdict(lambda: {s: [[] for _ in range(5)] for s, _ in checkpoints})
+    labels_dict = {}
+
+    for seed, ckpt_path in checkpoints:
+        print(f"  [Ensemble TN5000] Evaluating seed {seed} ({Path(ckpt_path).name})...")
+        model = MultiLevelSwin(dropout=0.0).to(DEVICE)
+        ckpt = _load_checkpoint(ckpt_path)
+        model.load_state_dict(ckpt["model_state_dict"])
+        model.eval()
+        with torch.no_grad():
+            for tensors, labels, ids in loader:
+                tensors = tensors.to(DEVICE)
+                B, num_tta, C, H, W = tensors.shape
+                logits = model(tensors.view(B * num_tta, C, H, W)).squeeze(-1).view(B, num_tta).cpu().float().numpy()
+                for i in range(B):
+                    obj_id = ids[i]
+                    labels_dict[obj_id] = int(labels[i])
+                    for scale_idx in range(5):
+                        all_seed_scale_logits[obj_id][seed][scale_idx].append(logits[i, scale_idx])
+        del model
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
+
+    ids = sorted(list(labels_dict.keys()))
+    y_true = np.array([labels_dict[i] for i in ids])
+
+    seed_tta_logits = []
+    for seed, _ in checkpoints:
+        s_logits = [np.mean([np.mean(all_seed_scale_logits[i][seed][s_idx]) for s_idx in range(5)]) for i in ids]
+        seed_tta_logits.append(np.array(s_logits))
+
+    ensemble_logits = np.mean(seed_tta_logits, axis=0)
+    metrics = compute_metrics(y_true, ensemble_logits)
+    _out = out_dir or (RESULTS_DIR / "ensemble")
+    _out.mkdir(parents=True, exist_ok=True)
+    save_report(metrics, _out / "tn5000_focal_ensemble_report.md", f"TN5000 {len(checkpoints)}-Seed Ensemble (Focal Loss V2)")
+    with open(_out / "tn5000_focal_ensemble_metrics.json", "w") as f:
+        json.dump({k: (v if isinstance(v, (str, int, bool)) else float(v)) for k, v in metrics.items()}, f, indent=2)
+    print(f"TN5000 {len(checkpoints)}-Seed Ensemble AUROC: {metrics['AUROC']:.4f}")
+    return metrics
+
+
+def evaluate_ensemble_diveshzz(checkpoints: list, out_dir: Path = None):
+    """Evaluate multi-seed ensemble on Diveshzz."""
+    print("=" * 70)
+    print(f"EVALUATING {len(checkpoints)}-SEED ENSEMBLE ON DIVESHZZ")
+    print("=" * 70)
+    try:
+        import kagglehub
+        divesh_path = Path(kagglehub.dataset_download('diveshzz/thyroid-cancer-classification-ultrasound-dataset'))
+    except Exception as e:
+        print(f"  Diveshzz dataset download failed: {e}")
+        return None
+    ds = DiveshzzDataset(str(divesh_path))
+    loader = DataLoader(ds, batch_size=4, shuffle=False, num_workers=NUM_WORKERS)
+
+    all_seed_scale_logits = defaultdict(lambda: {s: [[] for _ in range(5)] for s, _ in checkpoints})
+    labels_dict = {}
+
+    for seed, ckpt_path in checkpoints:
+        print(f"  [Ensemble Diveshzz] Evaluating seed {seed} ({Path(ckpt_path).name})...")
+        model = MultiLevelSwin(dropout=0.0).to(DEVICE)
+        ckpt = _load_checkpoint(ckpt_path)
+        model.load_state_dict(ckpt["model_state_dict"])
+        model.eval()
+        with torch.no_grad():
+            for tensors, labels, ids in loader:
+                tensors = tensors.to(DEVICE)
+                B, num_tta, C, H, W = tensors.shape
+                logits = model(tensors.view(B * num_tta, C, H, W)).squeeze(-1).view(B, num_tta).cpu().float().numpy()
+                for i in range(B):
+                    obj_id = ids[i]
+                    labels_dict[obj_id] = int(labels[i])
+                    for scale_idx in range(5):
+                        all_seed_scale_logits[obj_id][seed][scale_idx].append(logits[i, scale_idx])
+        del model
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
+
+    ids = sorted(list(labels_dict.keys()))
+    y_true = np.array([labels_dict[i] for i in ids])
+
+    seed_tta_logits = []
+    for seed, _ in checkpoints:
+        s_logits = [np.mean([np.mean(all_seed_scale_logits[i][seed][s_idx]) for s_idx in range(5)]) for i in ids]
+        seed_tta_logits.append(np.array(s_logits))
+
+    ensemble_logits = np.mean(seed_tta_logits, axis=0)
+    metrics = compute_metrics(y_true, ensemble_logits)
+    _out = out_dir or (RESULTS_DIR / "ensemble")
+    _out.mkdir(parents=True, exist_ok=True)
+    save_report(metrics, _out / "diveshzz_focal_ensemble_report.md", f"Diveshzz {len(checkpoints)}-Seed Ensemble (Focal Loss V2)")
+    with open(_out / "diveshzz_focal_ensemble_metrics.json", "w") as f:
+        json.dump({k: (v if isinstance(v, (str, int, bool)) else float(v)) for k, v in metrics.items()}, f, indent=2)
+    print(f"Diveshzz {len(checkpoints)}-Seed Ensemble AUROC: {metrics['AUROC']:.4f}")
+    return metrics
+
+
+def evaluate_ensemble_thyroid_pretraining(checkpoints: list, out_dir: Path = None):
+    """Evaluate multi-seed ensemble on Thyroid for Pretraining."""
+    print("=" * 70)
+    print(f"EVALUATING {len(checkpoints)}-SEED ENSEMBLE ON THYROID FOR PRETRAINING")
+    print("=" * 70)
+    try:
+        import kagglehub
+        thyroid_path = Path(kagglehub.dataset_download('tingzen/thyroid-for-pretraining'))
+    except Exception as e:
+        print(f"  Thyroid for Pretraining download failed: {e}")
+        return None
+
+    class FlexibleThyroidDataset(Dataset):
+        def __init__(self, data_root: str):
+            self.samples = []
+            for root, dirs, files in os.walk(data_root):
+                dirname = os.path.basename(root).lower().strip()
+                label = 0 if dirname in ["benign", "0", "normal"] else (1 if dirname in ["malignant", "1"] else None)
+                if label is not None:
+                    for f in files:
+                        if f.lower().endswith(('.jpg', '.jpeg', '.png', '.bmp', '.tif', '.tiff')):
+                            patient_id = f.split('_')[0]
+                            self.samples.append({"id": patient_id, "img_path": os.path.join(root, f), "label": label})
+
+        def __len__(self):
+            return len(self.samples)
+
+        def __getitem__(self, idx):
+            s = self.samples[idx]
+            img = cv2.imread(s["img_path"])
+            img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+            tensors = torch.stack([t(image=img)["image"] for t in TTA_TRANSFORMS])
+            return tensors, torch.tensor(s["label"], dtype=torch.float32), s["id"]
+
+    ds = FlexibleThyroidDataset(str(thyroid_path))
+    loader = DataLoader(ds, batch_size=4, shuffle=False, num_workers=NUM_WORKERS)
+
+    all_seed_scale_logits = defaultdict(lambda: {s: [[] for _ in range(5)] for s, _ in checkpoints})
+    labels_dict = {}
+
+    for seed, ckpt_path in checkpoints:
+        print(f"  [Ensemble Thyroid] Evaluating seed {seed} ({Path(ckpt_path).name})...")
+        model = MultiLevelSwin(dropout=0.0).to(DEVICE)
+        ckpt = _load_checkpoint(ckpt_path)
+        model.load_state_dict(ckpt["model_state_dict"])
+        model.eval()
+        with torch.no_grad():
+            for tensors, labels, ids in loader:
+                tensors = tensors.to(DEVICE)
+                B, num_tta, C, H, W = tensors.shape
+                logits = model(tensors.view(B * num_tta, C, H, W)).squeeze(-1).view(B, num_tta).cpu().float().numpy()
+                for i in range(B):
+                    obj_id = ids[i]
+                    labels_dict[obj_id] = int(labels[i])
+                    for scale_idx in range(5):
+                        all_seed_scale_logits[obj_id][seed][scale_idx].append(logits[i, scale_idx])
+        del model
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
+
+    ids = sorted(list(labels_dict.keys()))
+    y_true = np.array([labels_dict[i] for i in ids])
+
+    seed_tta_logits = []
+    for seed, _ in checkpoints:
+        s_logits = [np.mean([np.mean(all_seed_scale_logits[i][seed][s_idx]) for s_idx in range(5)]) for i in ids]
+        seed_tta_logits.append(np.array(s_logits))
+
+    ensemble_logits = np.mean(seed_tta_logits, axis=0)
+    metrics = compute_metrics(y_true, ensemble_logits)
+    _out = out_dir or (RESULTS_DIR / "ensemble")
+    _out.mkdir(parents=True, exist_ok=True)
+    save_report(metrics, _out / "thyroid_pretraining_focal_ensemble_report.md", f"Thyroid for Pretraining {len(checkpoints)}-Seed Ensemble (Focal Loss V2)")
+    with open(_out / "thyroid_pretraining_focal_ensemble_metrics.json", "w") as f:
+        json.dump({k: (v if isinstance(v, (str, int, bool)) else float(v)) for k, v in metrics.items()}, f, indent=2)
+    print(f"Thyroid Pretraining {len(checkpoints)}-Seed Ensemble AUROC: {metrics['AUROC']:.4f}")
+    return metrics
+
+
+def evaluate_ensemble(seeds=None, dataset="all", out_dir=None):
+    """Evaluate ensemble across all usable seed checkpoints."""
+    if seeds is None:
+        seeds = list(range(5))
+
+    usable_ckpts = []
+    for s in seeds:
+        ckpt_path = EXP_DIR / f"seed{s}_clean" / "focal_best.pt"
+        if not ckpt_path.exists():
+            continue
+        if _is_git_lfs_pointer(ckpt_path):
+            continue
+        usable_ckpts.append((s, ckpt_path))
+
+    if len(usable_ckpts) < 2:
+        print(f"  [INFO] Ensemble evaluation requires >= 2 usable checkpoints (found {len(usable_ckpts)}). Skipping ensemble.")
+        return None
+
+    ens_dir = out_dir or (RESULTS_DIR / "ensemble")
+    ens_dir.mkdir(parents=True, exist_ok=True)
+    print("\n" + "=" * 70)
+    print(f"FOCAL LOSS V2 -- {len(usable_ckpts)}-SEED ENSEMBLE EVALUATION")
+    print(f"  Seeds: {[s for s, _ in usable_ckpts]}")
+    print(f"  Output directory: {ens_dir}")
+    print("=" * 70)
+
+    results = {}
+    if dataset in ["tn5000", "all"]:
+        results["TN5000"] = evaluate_ensemble_tn5000(usable_ckpts, ens_dir)
+    if dataset in ["diveshzz", "all"]:
+        results["Diveshzz"] = evaluate_ensemble_diveshzz(usable_ckpts, ens_dir)
+    if dataset in ["thyroid", "all"]:
+        results["Thyroid Pretraining"] = evaluate_ensemble_thyroid_pretraining(usable_ckpts, ens_dir)
+
+    with open(ens_dir / "ensemble_summary.json", "w", encoding="utf-8") as f:
+        json.dump(
+            {ds: {k: (v if isinstance(v, (str, int, bool)) else float(v)) for k, v in m.items()}
+             for ds, m in results.items() if m is not None},
+            f, indent=2
+        )
+    return results
+
+
+def evaluate_all_seeds(seeds=None, dataset="all"):
+    """Evaluate each individual seed checkpoint on specified datasets."""
+    if seeds is None:
+        seeds = list(range(5))
+    print("\n" + "=" * 70)
+    print("FOCAL LOSS V2 -- EVALUATING INDIVIDUAL SEEDS")
+    print(f"  Seeds: {seeds}")
+    print(f"  Dataset: {dataset}")
+    print("=" * 70)
+
+    for s in seeds:
+        seed_ckpt_dir = EXP_DIR / f"seed{s}_clean"
+        ckpt = seed_ckpt_dir / "focal_best.pt"
+        if not ckpt.exists():
+            print(f"  [SKIP] Seed {s} checkpoint does not exist: {ckpt}")
+            continue
+        if _is_git_lfs_pointer(ckpt):
+            print(f"  [SKIP] Seed {s} checkpoint is a Git LFS pointer: {ckpt}")
+            continue
+        out_dir = RESULTS_DIR / f"seed{s}"
+        out_dir.mkdir(parents=True, exist_ok=True)
+        if dataset in ["tn5000", "all"]:
+            evaluate_tn5000(str(ckpt), out_dir)
+        if dataset in ["diveshzz", "all"]:
+            evaluate_diveshzz(str(ckpt), out_dir)
+        if dataset in ["thyroid", "all"]:
+            evaluate_thyroid_pretraining(str(ckpt), out_dir)
+
+
 def _run_sanity():
     print("=" * 70)
-    print("FOCAL LOSS EXPERIMENT V2 — SANITY CHECKS")
+    print("FOCAL LOSS EXPERIMENT V2 -- SANITY CHECKS")
     print("=" * 70)
 
     # 1. Focal loss unit tests
     print("\n[1/7] Running focal loss unit tests...")
     ok = test_focal_loss()
     if not ok:
-        print("Focal loss unit tests FAILED — aborting.")
+        print("Focal loss unit tests FAILED -- aborting.")
         raise SystemExit(1)
 
     # 2. Model initialization
@@ -1169,46 +1528,68 @@ def _run_sanity():
 
 def aggregate_results(seeds=None):
     """
-    Read per-seed eval JSON files and report mean ± std AUROC across seeds.
+    Read per-seed eval JSON files and report mean +/- std AUROC across seeds.
     Reads from results/seed{N}/ for N in seeds.
+    Also incorporates ensemble results if available.
     """
     if seeds is None:
         seeds = list(range(5))
     print("=" * 70)
-    print("FOCAL LOSS V2 — MULTI-SEED AGGREGATE RESULTS")
+    print("FOCAL LOSS V2 -- MULTI-SEED AGGREGATE RESULTS")
     print(f"  Seeds: {seeds}")
     print("=" * 70)
 
     datasets = [
-        ("TN5000",              "tn5000_focal_metrics.json"),
-        ("Diveshzz",            "diveshzz_focal_metrics.json"),
-        ("Thyroid Pretraining", "thyroid_pretraining_focal_metrics.json"),
+        ("TN5000",              "tn5000_focal_metrics.json",           "tn5000_focal_ensemble_metrics.json"),
+        ("Diveshzz",            "diveshzz_focal_metrics.json",         "diveshzz_focal_ensemble_metrics.json"),
+        ("Thyroid Pretraining", "thyroid_pretraining_focal_metrics.json", "thyroid_pretraining_focal_ensemble_metrics.json"),
     ]
     aggregate = {}
-    for ds_name, fname in datasets:
+    for ds_name, fname, ens_fname in datasets:
         aurocs = []
+        found_seeds = []
         for s in seeds:
             p = RESULTS_DIR / f"seed{s}" / fname
             if p.exists():
-                with open(p) as f:
-                    m = json.load(f)
-                aurocs.append(m["AUROC"])
-            else:
-                print(f"  [MISSING] seed{s} / {ds_name}: {p}")
+                try:
+                    with open(p, "r", encoding="utf-8") as f:
+                        m = json.load(f)
+                    aurocs.append(m["AUROC"])
+                    found_seeds.append(s)
+                except Exception:
+                    pass
         if aurocs:
             mean_auc = float(np.mean(aurocs))
             std_auc  = float(np.std(aurocs))
-            vals_str = ", ".join(f"{a:.4f}" for a in aurocs)
-            print(f"  {ds_name}: AUROC = {mean_auc:.4f} \u00b1 {std_auc:.4f}  "
-                  f"(n={len(aurocs)}, seeds=[{vals_str}])")
-            aggregate[ds_name] = {"seeds": list(zip(seeds[:len(aurocs)], aurocs)),
-                                   "mean": mean_auc, "std": std_auc, "n": len(aurocs)}
+            vals_str = ", ".join(f"seed{s}={a:.4f}" for s, a in zip(found_seeds, aurocs))
+            print(f"  {ds_name} (Single-Seed Mean): AUROC = {mean_auc:.4f} \u00b1 {std_auc:.4f}  "
+                  f"(n={len(aurocs)}, [{vals_str}])")
+            aggregate[ds_name] = {
+                "seeds": list(zip(found_seeds, aurocs)),
+                "mean": mean_auc,
+                "std": std_auc,
+                "n": len(aurocs),
+            }
         else:
-            print(f"  {ds_name}: no seed results found.")
+            print(f"  {ds_name}: no individual seed results found in {RESULTS_DIR}")
+
+        ens_p = RESULTS_DIR / "ensemble" / ens_fname
+        if ens_p.exists():
+            try:
+                with open(ens_p, "r", encoding="utf-8") as f:
+                    em = json.load(f)
+                ens_auc = em.get("AUROC", float("nan"))
+                print(f"  {ds_name} (Ensemble AUROC): {ens_auc:.4f}")
+                if ds_name in aggregate:
+                    aggregate[ds_name]["ensemble_auroc"] = ens_auc
+                else:
+                    aggregate[ds_name] = {"ensemble_auroc": ens_auc}
+            except Exception:
+                pass
 
     if aggregate:
         out_path = RESULTS_DIR / "focal_aggregate_summary.json"
-        with open(out_path, "w") as f:
+        with open(out_path, "w", encoding="utf-8") as f:
             json.dump(aggregate, f, indent=2)
         print(f"\n  Saved aggregate summary -> {out_path}")
     print("=" * 70)
@@ -1225,10 +1606,11 @@ if __name__ == "__main__":
         "command", nargs="?",
         choices=["sanity", "train", "eval", "all", "aggregate"],
         default="all",
+        help="Command to run: 'train' (all 5 seeds), 'eval', 'all' (train all seeds then eval), 'sanity', 'aggregate'.",
     )
     parser.add_argument(
         "--seed", type=int, default=None,
-        help="Seed index to run (0-4). Omit to run all 5 seeds.",
+        help="Seed index to run (0-4). Omit to run all 5 seeds together.",
     )
     parser.add_argument(
         "--checkpoint", type=str, default=None,
@@ -1237,6 +1619,11 @@ if __name__ == "__main__":
     parser.add_argument(
         "--dataset", type=str,
         choices=["tn5000", "diveshzz", "thyroid", "all"], default="all",
+        help="Dataset to evaluate on.",
+    )
+    parser.add_argument(
+        "--force", action="store_true",
+        help="Force re-training even if seed is already complete.",
     )
     args = parser.parse_args()
 
@@ -1246,31 +1633,45 @@ if __name__ == "__main__":
         _run_sanity()
 
     elif args.command == "train":
-        for s in seeds:
-            train_seed(s)
+        train_all_seeds(seeds=seeds, force=args.force)
 
     elif args.command == "eval":
-        for s in seeds:
-            seed_ckpt_dir = EXP_DIR / f"seed{s}_clean"
-            ckpt = args.checkpoint or str(seed_ckpt_dir / "focal_best.pt")
-            out_dir = RESULTS_DIR / f"seed{s}"
+        if args.checkpoint is not None and args.seed is not None:
+            out_dir = RESULTS_DIR / f"seed{args.seed}"
             if args.dataset in ["tn5000", "all"]:
-                evaluate_tn5000(ckpt, out_dir)
+                evaluate_tn5000(args.checkpoint, out_dir)
             if args.dataset in ["diveshzz", "all"]:
-                evaluate_diveshzz(ckpt, out_dir)
+                evaluate_diveshzz(args.checkpoint, out_dir)
             if args.dataset in ["thyroid", "all"]:
-                evaluate_thyroid_pretraining(ckpt, out_dir)
+                evaluate_thyroid_pretraining(args.checkpoint, out_dir)
+        else:
+            evaluate_all_seeds(seeds=seeds, dataset=args.dataset)
+            if len(seeds) > 1:
+                evaluate_ensemble(seeds=seeds, dataset=args.dataset)
+            aggregate_results(seeds=seeds)
 
     elif args.command == "all":
-        for s in seeds:
-            train_seed(s)
-            seed_ckpt_dir = EXP_DIR / f"seed{s}_clean"
-            ckpt = str(seed_ckpt_dir / "focal_best.pt")
-            out_dir = RESULTS_DIR / f"seed{s}"
-            evaluate_tn5000(ckpt, out_dir)
-            evaluate_diveshzz(ckpt, out_dir)
-            evaluate_thyroid_pretraining(ckpt, out_dir)
-        aggregate_results(list(range(5)))
+        # Phase 1: Train all seeds sequentially in one run
+        print("\n" + "=" * 70)
+        print("PHASE 1: TRAINING ALL 5 SEEDS")
+        print("=" * 70)
+        train_all_seeds(seeds=seeds, force=args.force)
+
+        # Phase 2: Evaluate individual seeds
+        print("\n" + "=" * 70)
+        print("PHASE 2: EVALUATING INDIVIDUAL SEEDS")
+        print("=" * 70)
+        evaluate_all_seeds(seeds=seeds, dataset=args.dataset)
+
+        # Phase 3: Ensemble evaluation and aggregation
+        print("\n" + "=" * 70)
+        print("PHASE 3: MULTI-SEED ENSEMBLE & AGGREGATION")
+        print("=" * 70)
+        if len(seeds) > 1:
+            evaluate_ensemble(seeds=seeds, dataset=args.dataset)
+        aggregate_results(seeds=seeds)
 
     elif args.command == "aggregate":
-        aggregate_results(seeds)
+        aggregate_results(seeds=seeds)
+        if len(seeds) > 1:
+            evaluate_ensemble(seeds=seeds, dataset=args.dataset)
