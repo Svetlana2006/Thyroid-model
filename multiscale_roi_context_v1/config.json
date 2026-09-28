@@ -1,0 +1,97 @@
+{
+  "experiment": "multiscale_roi_context_v1",
+  "description": "Multi-Scale ROI + Context Fusion. One shared Swin-Tiny backbone processes three views (full image, tight ROI, expanded ROI) per sample. Per-view multilevel features are extracted and fused via a learned gate before classification.",
+
+  "backbone": {
+    "model": "swin_tiny_patch4_window7_224",
+    "pretrained": true,
+    "num_classes": 0,
+    "shared_across_views": true,
+    "note": "ONE backbone instance. Views concatenated along batch dim for single forward pass."
+  },
+
+  "feature_extraction": {
+    "stages": {
+      "layers.1": 192,
+      "layers.2": 384,
+      "layers.3": 768
+    },
+    "proj_dim": 128,
+    "bias": false,
+    "views": ["full", "tight", "expanded"],
+    "fused_dim": 1152
+  },
+
+  "fusion": {
+    "type": "element_wise_gate",
+    "gate": "sigmoid(Linear(1152 -> 1152))",
+    "classifier": "Linear(1152->256) -> GELU -> Dropout(0.3) -> Linear(256->1)"
+  },
+
+  "roi": {
+    "tight_pad_ratio": 0.10,
+    "expanded_scale": 2.00,
+    "min_crop_size": 16,
+    "gt_boxes_training": "TN5000 VOC XML annotations",
+    "gt_boxes_evaluation": "TN5000 test (GT available), Diveshzz/Kaggle (AutoROI via GradCAM)",
+    "auto_roi_mechanism": "GradCAM on layers.3 activation magnitudes, thresholded at 0.4"
+  },
+
+  "training": {
+    "seeds": [0],
+    "epochs": 25,
+    "batch_size": 16,
+    "lr_head": 3e-4,
+    "lr_backbone": 3e-5,
+    "weight_decay": 1e-4,
+    "label_smooth_eps": 0.05,
+    "grad_clip_norm": 1.0,
+    "dropout": 0.3,
+    "freeze_schedule": {
+      "epoch_lt_6": "backbone frozen",
+      "epoch_6_to_9": "layers.3 + norm trainable",
+      "epoch_ge_10": "full backbone trainable"
+    },
+    "scheduler": {
+      "type": "CosineAnnealingWarmRestarts",
+      "T_0": 10,
+      "T_mult": 2
+    },
+    "early_stopping": {
+      "patience": 10,
+      "min_delta": 0.001
+    },
+    "amp": "enabled on CUDA"
+  },
+
+  "data": {
+    "training": ["TN5000 train split", "AUITD (all splits)"],
+    "evaluation": ["TN5000 test split", "Diveshzz", "Thyroid for Pretraining"],
+    "note_auitd": "No GT boxes. All three views = full image during training. AutoROI at inference."
+  },
+
+  "tta": {
+    "scales": [0.70, 0.85, 1.00, 1.15, 1.30],
+    "horizontal_flip": false,
+    "per_scale": "three views generated (full, tight ROI, expanded ROI), fused logit averaged"
+  },
+
+  "evaluation": {
+    "threshold": 0.5912,
+    "metrics": ["AUROC", "95%CI", "Accuracy", "Sensitivity", "Specificity", "F1", "PR-AUC", "MCC"],
+    "thyroid_pretraining_aggregation": "patient-level (2 images/patient, average logit, then AUROC)"
+  },
+
+  "baseline_auroc": {
+    "TN5000":              0.9566,
+    "Diveshzz":            0.8298,
+    "Thyroid_Pretraining": 0.8261
+  },
+
+  "dataset_annotation_status": {
+    "TN5000":              {"boxes": true,  "source": "VOC XML GT", "used_at_inference": true},
+    "AUITD":               {"boxes": false, "source": "none",       "used_at_inference": false},
+    "Diveshzz":            {"boxes": false, "source": "none",       "used_at_inference": false},
+    "Thyroid_Pretraining": {"boxes": false, "source": "none",       "used_at_inference": false}
+  }
+}
