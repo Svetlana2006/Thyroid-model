@@ -1,20 +1,21 @@
 """
-Corrected Binary Focal Loss implementation for focal_loss_experiment_v2.
+Binary Focal Loss implementation for thyroid cancer classification.
 
-This implementation correctly preserves the positive-class weighting and label-smoothing
-behavior of the existing BCEWithLogitsLoss used in our main model, while introducing
-focal modulation.
+v3 design decisions (updated from v2):
+- gamma=1.0  (was 2.0): Our datasets are moderately imbalanced (~40-73% malignant),
+  not the extreme 1:1000 ratios that gamma=2.0 (RetinaNet/COCO) was designed for.
+  Lower gamma retains gradient signal from easy examples and stabilises early training.
+- label_smooth_eps=0.0  (was 0.05): Label smoothing softens targets to reduce
+  overconfidence; focal modulation simultaneously pushes the model to be more confident
+  on hard examples. These two objectives directly conflict and partially cancel each
+  other, diluting the focal gradient signal. Do not use both together.
+- pos_weight=1.0  (was n_benign/n_malignant): The focal factor (1-p_t)^gamma already
+  down-weights easy majority-class examples, providing implicit class re-balancing.
+  Stacking an explicit pos_weight on top double-corrects imbalance and distorts gradient
+  magnitudes -- pass pos_weight=1.0 to disable it.
 
-Key design decisions:
-- pos_weight: applied to the positive class term in BCEWithLogitsLoss, same as BCEWithLogitsLoss
-- label_smooth_eps: same smoothing as main model (0.05)
-- gamma=2.0: focal modulation parameter (default)
-- Correct implementation follows the structure:
-  1. Compute per-example BCEWithLogitsLoss with pos_weight and label smoothing
-  2. Apply focal modulation to the resulting loss
-- This preserves the intended controlled structure:
-  - baseline: per-example BCEWithLogitsLoss semantics  
-  - focal: same per-example BCE weighting semantics multiplied by focal modulation
+The class itself still supports arbitrary pos_weight and label_smooth_eps for ablation
+experiments; the v3 defaults in run_experiment.py simply leave them at their no-op values.
 """
 
 import torch

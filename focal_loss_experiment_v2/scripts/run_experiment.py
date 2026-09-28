@@ -1,8 +1,8 @@
 """
-Corrected Focal Loss Experiment Runner (v2) - Multi-Seed (Seeds 0-4)
+Focal Loss Experiment Runner (v3) - Multi-Seed (Seeds 0-4)
 
 Controlled experiment: MultiLevelSwin (same architecture as main model) with Binary Focal Loss
-gamma=2.0 instead of BCEWithLogitsLoss. Trains all 5 seeds (0, 1, 2, 3, 4) sequentially in one run,
+instead of BCEWithLogitsLoss. Trains all 5 seeds (0, 1, 2, 3, 4) sequentially in one run,
 preserving already-completed seeds, and evaluates individual seeds plus 5-seed ensemble on TN5000,
 Diveshzz, and Thyroid for Pretraining.
 
@@ -10,10 +10,13 @@ Key features:
 1. Multi-seed training (seeds 0-4) with reproducible RNG state handling.
 2. Completed seed preservation: skips already trained seeds unless --force is specified.
 3. Architecture matches main model (bias=False for all projection layers, 27,792,891 params).
-4. BinaryFocalLoss pos_weight semantics match BCEWithLogitsLoss.
-5. Consistent label smoothing (eps=0.05).
-6. TTA and evaluation pipeline matching main model.
-7. Both individual seed metrics and 5-seed ensemble evaluation.
+4. BinaryFocalLoss with gamma=1.0 (less aggressive than v2's gamma=2.0).
+5. Label smoothing REMOVED (eps=0.0): smoothing and focal modulation conflict -- smoothing
+   softens targets to reduce overconfidence while focal pushes confidence on hard examples.
+6. pos_weight set to 1.0: focal modulation already handles class imbalance via (1-p_t)^gamma;
+   stacking pos_weight on top double-corrects imbalance and distorts the gradient signal.
+7. TTA and evaluation pipeline matching main model.
+8. Both individual seed metrics and 5-seed ensemble evaluation.
 """
 
 import copy
@@ -65,8 +68,15 @@ NUM_WORKERS = min(2, os.cpu_count() or 1) if torch.cuda.is_available() else 0
 EPOCHS = 25
 BATCH_SIZE = 16
 LR_HEAD = 3e-4
-LABEL_SMOOTH_EPS = 0.05
-GAMMA = 2.0
+# v3 fix: label smoothing removed -- it conflicts with focal modulation.
+# Smoothing softens targets to reduce overconfidence; focal pushes confidence on hard
+# examples. The two objectives partially cancel, diluting the gradient signal.
+LABEL_SMOOTH_EPS = 0.0
+# v3 fix: gamma lowered from 2.0 (RetinaNet default for COCO) to 1.0.
+# Our datasets are moderately imbalanced (~40-73% malignant), not the extreme 1:1000
+# ratios gamma=2.0 was tuned for. Lower gamma preserves more gradient from easy examples
+# and avoids starving the model of clean learning signal in early training epochs.
+GAMMA = 1.0
 WARMUP_EPOCHS = 10
 TTA_SCALES = [0.70, 0.85, 1.00, 1.15, 1.30]
 THRESHOLD = 0.5912
@@ -476,11 +486,12 @@ def save_report(metrics, output_path: Path, title: str):
 
 def train_seed(seed: int = 0, force: bool = False):
     print("=" * 70)
-    print(f"FOCAL LOSS EXPERIMENT V2 - SEED {seed} TRAINING")
+    print(f"FOCAL LOSS EXPERIMENT V3 - SEED {seed} TRAINING")
     print("=" * 70)
-    print("CONFIGURED TO MATCH MAIN MODEL TRAINING PIPELINE:")
+    print("CONFIGURED TO MATCH MAIN MODEL TRAINING PIPELINE (v3 fixes):")
     print("  Architecture: MultiLevelSwin with bias=False projections")
-    print("  Loss: BinaryFocalLoss(gamma=2.0) replacing BCEWithLogitsLoss")
+    print(f"  Loss: BinaryFocalLoss(gamma={GAMMA}, pos_weight=1.0, label_smooth_eps={LABEL_SMOOTH_EPS})")
+    print("  v3 changes vs v2: gamma 2.0->1.0, label_smooth_eps 0.05->0.0, pos_weight 1.0 (no double-correction)")
     print("  All other settings matched to train.py and src/trainer.py")
     print("=" * 70)
 
@@ -525,9 +536,15 @@ def train_seed(seed: int = 0, force: bool = False):
     train_ds = torch.utils.data.ConcatDataset([tn_ds, au_ds])
     print(f"Total train samples: {len(train_ds)}")
 
-    # Pos weight calculation matching main model
-    pos_weight = get_pos_weight()
-    print(f"Positive-class weight (n_benign/n_malignant): {pos_weight:.4f}")
+    # v3 fix: pos_weight is NOT passed to focal loss.
+    # In v2, pos_weight (n_benign/n_malignant) was forwarded to BinaryFocalLoss on top of
+    # focal modulation. This double-corrects class imbalance: focal's (1-p_t)^gamma already
+    # down-weights easy examples (which are predominantly the majority class), so adding
+    # pos_weight further biases the loss and distorts gradient magnitudes.
+    # We still compute it for logging/reference only.
+    pos_weight_ref = get_pos_weight()
+    print(f"Positive-class weight (reference, n_benign/n_malignant): {pos_weight_ref:.4f}")
+    print(f"  [v3] pos_weight NOT passed to focal loss (focal modulation handles imbalance)")
 
     # Model initialization matching main model architecture
     model = MultiLevelSwin(dropout=0.3).to(DEVICE)
@@ -586,8 +603,9 @@ def train_seed(seed: int = 0, force: bool = False):
     except Exception as e:
         print(f"  [WARNING] Could not verify architecture structurally: {e}")
 
-    # Loss function (CORRECTED focal loss)
-    loss_fn = BinaryFocalLoss(gamma=GAMMA, pos_weight=pos_weight, label_smooth_eps=LABEL_SMOOTH_EPS).to(DEVICE)
+    # Loss function (v3: gamma=1.0, no label smoothing, no pos_weight double-correction)
+    loss_fn = BinaryFocalLoss(gamma=GAMMA, pos_weight=1.0, label_smooth_eps=LABEL_SMOOTH_EPS).to(DEVICE)
+    print(f"  Loss: BinaryFocalLoss(gamma={GAMMA}, pos_weight=1.0, label_smooth_eps={LABEL_SMOOTH_EPS})")
     
     # DataLoaders (EXACT same as main model)
     train_loader = DataLoader(train_ds, batch_size=BATCH_SIZE, shuffle=True, 
@@ -603,9 +621,10 @@ def train_seed(seed: int = 0, force: bool = False):
 
     # Save configuration (mechanical copy of main model config structure)
     config = {
-        "experiment_version": "focal_v2_clean",
+        "experiment_version": "focal_v3",
         "gamma": GAMMA,
         "label_smooth_eps": LABEL_SMOOTH_EPS,
+        "pos_weight": 1.0,
         "batch_size": BATCH_SIZE,
         "lr_head": LR_HEAD,
         "lr_backbone": LR_HEAD * 0.1,
@@ -658,9 +677,10 @@ def train_seed(seed: int = 0, force: bool = False):
         # Verify checkpoint compatibility
         ckpt_config = ckpt.get("config", {})
         required_config = {
-            "experiment_version": "focal_v2_clean",
+            "experiment_version": "focal_v3",
             "gamma": GAMMA,
             "label_smooth_eps": LABEL_SMOOTH_EPS,
+            "pos_weight": 1.0,
             "batch_size": BATCH_SIZE,
             "lr_head": LR_HEAD,
             "lr_backbone": LR_HEAD * 0.1,
