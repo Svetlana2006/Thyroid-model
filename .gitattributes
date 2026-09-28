@@ -1,4 +1,1 @@
-*.pt filter=lfs diff=lfs merge=lfs -text
-*.npy filter=lfs diff=lfs merge=lfs -text
-
-training_experiments/** -filter=lfs -diff=lfs -merge=lfs -text
+# Git LFS rules removed
