@@ -282,7 +282,7 @@ def test_focal_loss():
     rand_targets = torch.randint(0, 2, (32,), device=device, dtype=torch.float32)
     fl_batch = fl_gamma0(rand_logits, rand_targets).item()
     ts = rand_targets * (1.0 - eps) + 0.5 * eps
-    pw_t = torch.tensor([pos_w])
+    pw_t = torch.tensor([pos_w], device=rand_logits.device)
     bce_batch = F.binary_cross_entropy_with_logits(rand_logits, ts, pos_weight=pw_t).item()
     batch_abs_err = abs(fl_batch - bce_batch)
     batch_passed = batch_abs_err < 1e-5

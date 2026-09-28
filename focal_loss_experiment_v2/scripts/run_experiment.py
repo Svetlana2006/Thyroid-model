@@ -1118,6 +1118,29 @@ def evaluate_diveshzz(checkpoint_path: str, out_dir: Path = None):
     return metrics
 
 
+class FlexibleThyroidDataset(Dataset):
+    def __init__(self, data_root: str):
+        self.samples = []
+        for root, dirs, files in os.walk(data_root):
+            dirname = os.path.basename(root).lower().strip()
+            label = 0 if dirname in ["benign", "0", "normal"] else (1 if dirname in ["malignant", "1"] else None)
+            if label is not None:
+                for filename in files:
+                    if filename.lower().endswith((".jpg", ".jpeg", ".png", ".bmp", ".tif", ".tiff")):
+                        patient_id = filename.split("_")[0]
+                        self.samples.append({"id": patient_id, "img_path": os.path.join(root, filename), "label": label})
+
+    def __len__(self):
+        return len(self.samples)
+
+    def __getitem__(self, idx):
+        sample = self.samples[idx]
+        img = cv2.imread(sample["img_path"])
+        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        tensors = torch.stack([transform(image=img)["image"] for transform in TTA_TRANSFORMS])
+        return tensors, torch.tensor(sample["label"], dtype=torch.float32), sample["id"]
+
+
 def evaluate_thyroid_pretraining(checkpoint_path: str, out_dir: Path = None):
     print("=" * 70)
     print("EVALUATING ON THYROID FOR PRETRAINING")
@@ -1137,30 +1160,6 @@ def evaluate_thyroid_pretraining(checkpoint_path: str, out_dir: Path = None):
         print(f"  Thyroid for Pretraining download failed: {e}")
         return None
     print(f"  Using Thyroid for Pretraining path: {thyroid_path}")
-    
-    # Use a flexible dataset class that infers labels from directory structure
-    # (matching external_validation_kaggle.py KaggleThyroidDataset)
-    class FlexibleThyroidDataset(Dataset):
-        def __init__(self, data_root: str):
-            self.samples = []
-            for root, dirs, files in os.walk(data_root):
-                dirname = os.path.basename(root).lower().strip()
-                label = 0 if dirname in ["benign", "0", "normal"] else (1 if dirname in ["malignant", "1"] else None)
-                if label is not None:
-                    for f in files:
-                        if f.lower().endswith(('.jpg', '.jpeg', '.png', '.bmp', '.tif', '.tiff')):
-                            patient_id = f.split('_')[0]
-                            self.samples.append({"id": patient_id, "img_path": os.path.join(root, f), "label": label})
-        
-        def __len__(self):
-            return len(self.samples)
-        
-        def __getitem__(self, idx):
-            s = self.samples[idx]
-            img = cv2.imread(s["img_path"])
-            img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-            tensors = torch.stack([t(image=img)["image"] for t in TTA_TRANSFORMS])
-            return tensors, torch.tensor(s["label"], dtype=torch.float32), s["id"]
     
     model = MultiLevelSwin(dropout=0.0).to(DEVICE)
     ckpt = _load_checkpoint(ckpt_file)
@@ -1324,28 +1323,6 @@ def evaluate_ensemble_thyroid_pretraining(checkpoints: list, out_dir: Path = Non
     except Exception as e:
         print(f"  Thyroid for Pretraining download failed: {e}")
         return None
-
-    class FlexibleThyroidDataset(Dataset):
-        def __init__(self, data_root: str):
-            self.samples = []
-            for root, dirs, files in os.walk(data_root):
-                dirname = os.path.basename(root).lower().strip()
-                label = 0 if dirname in ["benign", "0", "normal"] else (1 if dirname in ["malignant", "1"] else None)
-                if label is not None:
-                    for f in files:
-                        if f.lower().endswith(('.jpg', '.jpeg', '.png', '.bmp', '.tif', '.tiff')):
-                            patient_id = f.split('_')[0]
-                            self.samples.append({"id": patient_id, "img_path": os.path.join(root, f), "label": label})
-
-        def __len__(self):
-            return len(self.samples)
-
-        def __getitem__(self, idx):
-            s = self.samples[idx]
-            img = cv2.imread(s["img_path"])
-            img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-            tensors = torch.stack([t(image=img)["image"] for t in TTA_TRANSFORMS])
-            return tensors, torch.tensor(s["label"], dtype=torch.float32), s["id"]
 
     ds = FlexibleThyroidDataset(str(thyroid_path))
     loader = DataLoader(ds, batch_size=4, shuffle=False, num_workers=NUM_WORKERS)

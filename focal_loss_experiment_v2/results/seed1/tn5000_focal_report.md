@@ -3,19 +3,19 @@
 **N:** 1000
 **Benign:** 269
 **Malignant:** 731
-**AUROC:** 0.9509
-**95% CI:** [0.9350, 0.9648]
-**PR-AUC:** 0.9787
-**Accuracy:** 0.8940
-**Sensitivity:** 0.9083
-**Specificity:** 0.8550
-**PPV:** 0.9445
-**NPV:** 0.7744
-**F1:** 0.9261
-**Balanced Accuracy:** 0.8817
-**MCC:** 0.7408
-**Cohen's Kappa:** 0.7391
-**TP:** 664
-**TN:** 230
-**FP:** 39
-**FN:** 67
+**AUROC:** 0.9402
+**95% CI:** [0.9232, 0.9558]
+**PR-AUC:** 0.9732
+**Accuracy:** 0.8610
+**Sensitivity:** 0.8523
+**Specificity:** 0.8848
+**PPV:** 0.9526
+**NPV:** 0.6879
+**F1:** 0.8996
+**Balanced Accuracy:** 0.8685
+**MCC:** 0.6870
+**Cohen's Kappa:** 0.6759
+**TP:** 623
+**TN:** 238
+**FP:** 31
+**FN:** 108
